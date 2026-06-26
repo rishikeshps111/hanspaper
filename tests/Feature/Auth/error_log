@@ -1,0 +1,60 @@
+[11-Mar-2025 05:58:53 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function test() in /home1/kla45der/public_html/allinone.klader.in/tests/Feature/Auth/PasswordResetTest.php:7
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/tests/Feature/Auth/PasswordResetTest.php on line 7
+[11-Mar-2025 05:58:53 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function test() in /home1/kla45der/public_html/allinone.klader.in/tests/Feature/Auth/AuthenticationTest.php:6
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/tests/Feature/Auth/AuthenticationTest.php on line 6
+[11-Mar-2025 05:58:54 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function test() in /home1/kla45der/public_html/allinone.klader.in/tests/Feature/Auth/EmailVerificationTest.php:9
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/tests/Feature/Auth/EmailVerificationTest.php on line 9
+[11-Mar-2025 05:59:03 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function test() in /home1/kla45der/public_html/allinone.klader.in/tests/Feature/Auth/EmailVerificationTest.php:9
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/tests/Feature/Auth/EmailVerificationTest.php on line 9
+[11-Mar-2025 05:59:04 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function test() in /home1/kla45der/public_html/allinone.klader.in/tests/Feature/Auth/PasswordResetTest.php:7
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/tests/Feature/Auth/PasswordResetTest.php on line 7
+[11-Mar-2025 05:59:05 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function test() in /home1/kla45der/public_html/allinone.klader.in/tests/Feature/Auth/AuthenticationTest.php:6
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/tests/Feature/Auth/AuthenticationTest.php on line 6
+[11-Mar-2025 05:59:13 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function test() in /home1/kla45der/public_html/allinone.klader.in/tests/Feature/Auth/EmailVerificationTest.php:9
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/tests/Feature/Auth/EmailVerificationTest.php on line 9
+[11-Mar-2025 05:59:14 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function test() in /home1/kla45der/public_html/allinone.klader.in/tests/Feature/Auth/PasswordResetTest.php:7
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/tests/Feature/Auth/PasswordResetTest.php on line 7
+[11-Mar-2025 05:59:16 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function test() in /home1/kla45der/public_html/allinone.klader.in/tests/Feature/Auth/AuthenticationTest.php:6
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/tests/Feature/Auth/AuthenticationTest.php on line 6
+[11-Mar-2025 05:59:25 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function test() in /home1/kla45der/public_html/allinone.klader.in/tests/Feature/Auth/EmailVerificationTest.php:9
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/tests/Feature/Auth/EmailVerificationTest.php on line 9
+[11-Mar-2025 05:59:25 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function test() in /home1/kla45der/public_html/allinone.klader.in/tests/Feature/Auth/PasswordResetTest.php:7
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/tests/Feature/Auth/PasswordResetTest.php on line 7
+[11-Mar-2025 05:59:26 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function test() in /home1/kla45der/public_html/allinone.klader.in/tests/Feature/Auth/AuthenticationTest.php:6
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/tests/Feature/Auth/AuthenticationTest.php on line 6
+[11-Mar-2025 05:59:38 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function test() in /home1/kla45der/public_html/allinone.klader.in/tests/Feature/Auth/PasswordResetTest.php:7
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/tests/Feature/Auth/PasswordResetTest.php on line 7
+[11-Mar-2025 05:59:39 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function test() in /home1/kla45der/public_html/allinone.klader.in/tests/Feature/Auth/AuthenticationTest.php:6
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/tests/Feature/Auth/AuthenticationTest.php on line 6
+[11-Mar-2025 05:59:39 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function test() in /home1/kla45der/public_html/allinone.klader.in/tests/Feature/Auth/EmailVerificationTest.php:9
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/tests/Feature/Auth/EmailVerificationTest.php on line 9

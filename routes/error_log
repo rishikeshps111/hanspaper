@@ -1,0 +1,80 @@
+[11-Mar-2025 04:03:21 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Support\Facades\Route" not found in /home1/kla45der/public_html/allinone.klader.in/routes/auth.php:14
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/routes/auth.php on line 14
+[11-Mar-2025 04:03:25 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Support\Facades\Broadcast" not found in /home1/kla45der/public_html/allinone.klader.in/routes/channels.php:16
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/routes/channels.php on line 16
+[11-Mar-2025 04:03:28 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Support\Facades\Artisan" not found in /home1/kla45der/public_html/allinone.klader.in/routes/console.php:17
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/routes/console.php on line 17
+[11-Mar-2025 04:03:29 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Support\Facades\Route" not found in /home1/kla45der/public_html/allinone.klader.in/routes/web.php:92
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/routes/web.php on line 92
+[11-Mar-2025 04:03:29 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Support\Facades\Route" not found in /home1/kla45der/public_html/allinone.klader.in/routes/auth.php:14
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/routes/auth.php on line 14
+[11-Mar-2025 04:03:34 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Support\Facades\Broadcast" not found in /home1/kla45der/public_html/allinone.klader.in/routes/channels.php:16
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/routes/channels.php on line 16
+[11-Mar-2025 04:03:38 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Support\Facades\Route" not found in /home1/kla45der/public_html/allinone.klader.in/routes/web.php:92
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/routes/web.php on line 92
+[11-Mar-2025 04:03:39 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Support\Facades\Route" not found in /home1/kla45der/public_html/allinone.klader.in/routes/auth.php:14
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/routes/auth.php on line 14
+[11-Mar-2025 04:03:44 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Support\Facades\Broadcast" not found in /home1/kla45der/public_html/allinone.klader.in/routes/channels.php:16
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/routes/channels.php on line 16
+[11-Mar-2025 04:03:44 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Support\Facades\Artisan" not found in /home1/kla45der/public_html/allinone.klader.in/routes/console.php:17
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/routes/console.php on line 17
+[11-Mar-2025 04:03:50 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Support\Facades\Route" not found in /home1/kla45der/public_html/allinone.klader.in/routes/auth.php:14
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/routes/auth.php on line 14
+[11-Mar-2025 04:03:50 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Support\Facades\Route" not found in /home1/kla45der/public_html/allinone.klader.in/routes/web.php:92
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/routes/web.php on line 92
+[11-Mar-2025 04:03:54 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Support\Facades\Artisan" not found in /home1/kla45der/public_html/allinone.klader.in/routes/console.php:17
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/routes/console.php on line 17
+[11-Mar-2025 04:03:56 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Support\Facades\Broadcast" not found in /home1/kla45der/public_html/allinone.klader.in/routes/channels.php:16
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/routes/channels.php on line 16
+[11-Mar-2025 04:04:01 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Support\Facades\Route" not found in /home1/kla45der/public_html/allinone.klader.in/routes/web.php:92
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/routes/web.php on line 92
+[11-Mar-2025 04:04:03 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Support\Facades\Route" not found in /home1/kla45der/public_html/allinone.klader.in/routes/auth.php:14
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/routes/auth.php on line 14
+[11-Mar-2025 04:04:04 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Support\Facades\Artisan" not found in /home1/kla45der/public_html/allinone.klader.in/routes/console.php:17
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/routes/console.php on line 17
+[11-Mar-2025 04:04:11 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Support\Facades\Broadcast" not found in /home1/kla45der/public_html/allinone.klader.in/routes/channels.php:16
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/routes/channels.php on line 16
+[11-Mar-2025 04:04:14 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Support\Facades\Route" not found in /home1/kla45der/public_html/allinone.klader.in/routes/web.php:92
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/routes/web.php on line 92
+[11-Mar-2025 04:04:16 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Support\Facades\Artisan" not found in /home1/kla45der/public_html/allinone.klader.in/routes/console.php:17
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/routes/console.php on line 17

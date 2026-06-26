@@ -1,0 +1,40 @@
+[11-Mar-2025 04:03:13 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Foundation\Application" not found in /home1/kla45der/public_html/allinone.klader.in/bootstrap/app.php:14
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/bootstrap/app.php on line 14
+[11-Mar-2025 04:03:22 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Foundation\Application" not found in /home1/kla45der/public_html/allinone.klader.in/bootstrap/app.php:14
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/bootstrap/app.php on line 14
+[11-Mar-2025 04:03:32 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Foundation\Application" not found in /home1/kla45der/public_html/allinone.klader.in/bootstrap/app.php:14
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/bootstrap/app.php on line 14
+[11-Mar-2025 04:03:40 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Foundation\Application" not found in /home1/kla45der/public_html/allinone.klader.in/bootstrap/app.php:14
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/bootstrap/app.php on line 14
+[11-Mar-2025 04:03:43 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Foundation\Application" not found in /home1/kla45der/public_html/allinone.klader.in/bootstrap/app.php:14
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/bootstrap/app.php on line 14
+[11-Mar-2025 04:03:49 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Foundation\Application" not found in /home1/kla45der/public_html/allinone.klader.in/bootstrap/app.php:14
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/bootstrap/app.php on line 14
+[11-Mar-2025 04:03:56 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Foundation\Application" not found in /home1/kla45der/public_html/allinone.klader.in/bootstrap/app.php:14
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/bootstrap/app.php on line 14
+[11-Mar-2025 04:03:59 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Foundation\Application" not found in /home1/kla45der/public_html/allinone.klader.in/bootstrap/app.php:14
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/bootstrap/app.php on line 14
+[11-Mar-2025 04:04:10 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Foundation\Application" not found in /home1/kla45der/public_html/allinone.klader.in/bootstrap/app.php:14
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/bootstrap/app.php on line 14
+[11-Mar-2025 04:04:24 UTC] PHP Fatal error:  Uncaught Error: Class "Illuminate\Foundation\Application" not found in /home1/kla45der/public_html/allinone.klader.in/bootstrap/app.php:14
+Stack trace:
+#0 {main}
+  thrown in /home1/kla45der/public_html/allinone.klader.in/bootstrap/app.php on line 14
