@@ -76,6 +76,15 @@ class DatabaseSeeder extends Seeder
             $adminSeeder = new UpdateSeeder();
             $adminSeeder->run();
 
+            $this->call([
+                ReelBrandSeeder::class,
+                ReelGsmSeeder::class,
+                ReelProviderSeeder::class,
+                ReelTypeSeeder::class,
+                ReelWarehouseSeeder::class,
+                ReelPdfStockSeeder::class,
+            ]);
+
             DB::commit();
 
             echo "Seeding Completed!!";

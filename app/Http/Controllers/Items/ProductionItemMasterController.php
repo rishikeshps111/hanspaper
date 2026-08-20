@@ -51,6 +51,11 @@ use App\Http\Requests\ProductUpdateRequest;
 use App\Models\RealStock;
 use App\Models\Items\ItemCategory;
 use App\Models\Items\Brand;
+use App\Models\Reels\ReelStock;
+use App\Models\Reels\ReelStockMovement;
+use App\Models\Reels\ReelStockUsage;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Str;
 
 class ProductionItemMasterController extends Controller
 {
@@ -183,15 +188,56 @@ class ProductionItemMasterController extends Controller
     {
         $user = auth()->user();
         $productionItemMaster = ProductionItemMaster::with(['item', 'item.brand', 'requestedBy', 'approvedBy', 'purchaseOrder.party', 'assignedMachine', 'assignedProductionUser', 'assignedPackingUser'])->findOrFail($id);
-        //$reals = Real::with('brandRelation', 'categoryRelation')->where('is_active', 1)->where('current_status','!=','full')->orWhereNull('current_status')->get();
-        $reals = Real::with('brandRelation', 'categoryRelation')->where('is_active', 1)->get();
-       // dd($reals);
         return view('production.edit', [
             'user' => $user,
             'productionItemMaster' => $productionItemMaster,
-            'reals' => $reals,
         ]);
 
+    }
+
+    public function reelStockSearch(Request $request): JsonResponse
+    {
+        $term = trim((string) $request->input('q', ''));
+        $page = max(1, $request->integer('page', 1));
+        $perPage = 20;
+
+        $query = ReelStock::query()
+            ->with(['reel:id,code,width', 'warehouse:id,name', 'provider:id,name'])
+            ->where('is_active', true)
+            ->whereIn('status', ['full', 'bit'])
+            ->where('balance_length', '>', 0)
+            ->when($term !== '', function ($query) use ($term) {
+                $query->where(function ($query) use ($term) {
+                    $query->where('stock_code', 'like', "%{$term}%")
+                        ->orWhere('actual_code', 'like', "%{$term}%")
+                        ->orWhereHas('reel', fn ($reel) => $reel->where('code', 'like', "%{$term}%"))
+                        ->orWhereHas('provider', fn ($provider) => $provider->where('name', 'like', "%{$term}%"))
+                        ->orWhereHas('warehouse', fn ($warehouse) => $warehouse->where('name', 'like', "%{$term}%"));
+                });
+            })
+            ->orderBy('stock_code');
+
+        $stocks = $query->skip(($page - 1) * $perPage)->take($perPage + 1)->get();
+        $more = $stocks->count() > $perPage;
+
+        return response()->json([
+            'results' => $stocks->take($perPage)->map(fn (ReelStock $stock) => [
+                'id' => $stock->id,
+                'text' => implode(' | ', array_filter([
+                    $stock->stock_code,
+                    $stock->actual_code,
+                    $stock->reel?->code,
+                    $stock->provider?->name,
+                    $stock->warehouse?->name,
+                    number_format((float) $stock->balance_length, 2) . ' m',
+                ])),
+                'status' => $stock->status,
+                'width' => (float) ($stock->reel?->width ?? 0),
+                'balance' => (float) $stock->balance_length,
+                'cut_width' => (float) ($stock->cut_width ?? 0),
+            ])->values(),
+            'pagination' => ['more' => $more],
+        ]);
     }
 
     public function update(Request $request, ProductionItemMaster $productionItemMaster)
@@ -414,6 +460,8 @@ class ProductionItemMasterController extends Controller
 
     public function storeProduction(Request $request)
     {
+        return $this->storeProductionWithReelStock($request);
+
         $validator = Validator::make($request->all(), [
             'production_id' => 'required|exists:production_item_masters,id',
             'production_qty' => 'required|numeric|min:1',
@@ -763,6 +811,166 @@ class ProductionItemMasterController extends Controller
                 'status' => false,
                 'message' => 'An error occurred while saving production.',
                 'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    private function storeProductionWithReelStock(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'production_id' => ['required', 'exists:production_item_masters,id'],
+            'production_qty' => ['required', 'numeric', 'min:1'],
+            'packed_by' => ['required', 'exists:employees,id'],
+            'machines' => ['required', 'exists:machines,id'],
+            'reel_stock_id' => ['required', 'exists:reel_stocks,id'],
+            'roll_length' => ['required', 'numeric', 'gt:0'],
+            'output_roll_width' => ['required', 'numeric', 'gt:0'],
+            'reel_status_after_usage' => ['required', 'in:bit,finished'],
+            'reel_status_selection_type' => ['required', 'in:automatic,manual'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['status' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        try {
+            DB::transaction(function () use ($request) {
+                $production = ProductionItemMaster::lockForUpdate()->findOrFail($request->integer('production_id'));
+                $stock = ReelStock::with('reel')->lockForUpdate()->findOrFail($request->integer('reel_stock_id'));
+
+                if (!$stock->is_active || !in_array($stock->status, ['full', 'bit'], true)) {
+                    throw ValidationException::withMessages(['reel_stock_id' => 'Only active Full or Bit Reel stock can be used.']);
+                }
+
+                $rollLength = round((float) $request->input('roll_length'), 3);
+                $outputWidth = round((float) $request->input('output_roll_width'), 3);
+                $sourceWidth = round((float) $stock->reel->width, 3);
+                if ($outputWidth > $sourceWidth) {
+                    throw ValidationException::withMessages([
+                        'output_roll_width' => "Output roll width cannot exceed the source width of {$sourceWidth} mm.",
+                    ]);
+                }
+
+                $rollCount = (int) floor($sourceWidth / $outputWidth);
+                if ($rollCount < 1) {
+                    throw ValidationException::withMessages(['output_roll_width' => 'The selected width does not produce any rolls.']);
+                }
+
+                $totalProducedQty = (float) $production->productionLists()->sum('quantity');
+                $productionQuantity = round((float) $request->input('production_qty'), 3);
+                $newTotal = $totalProducedQty + $productionQuantity;
+                if ($newTotal > (float) $production->requested_qty) {
+                    throw ValidationException::withMessages(['production_qty' => 'Production quantity exceeds requested quantity.']);
+                }
+
+                if ($stock->cut_width !== null && abs((float) $stock->cut_width - $outputWidth) > 0.0001) {
+                    throw ValidationException::withMessages([
+                        'output_roll_width' => "This Bit reel was already slit to {$stock->cut_width} mm. Continue using the same width.",
+                    ]);
+                }
+
+                $balanceBefore = $stock->cut_width === null
+                    ? round((float) $stock->balance_length * $rollCount, 3)
+                    : round((float) $stock->balance_length, 3);
+                $consumedLength = round($productionQuantity * $rollLength, 3);
+                if ($consumedLength > $balanceBefore) {
+                    $possibleQuantity = (int) floor($balanceBefore / $rollLength);
+                    throw ValidationException::withMessages([
+                        'production_qty' => "Only {$possibleQuantity} roll(s) can be produced from the available {$balanceBefore} m.",
+                    ]);
+                }
+
+                $balanceAfter = round($balanceBefore - $consumedLength, 3);
+                $calculatedStatus = $balanceAfter <= 0 ? 'finished' : 'bit';
+                $resultingStatus = $request->input('reel_status_after_usage');
+                if ($resultingStatus === 'bit' && $balanceAfter <= 0) {
+                    throw ValidationException::withMessages([
+                        'reel_status_after_usage' => 'Bit cannot be selected because no usable balance remains.',
+                    ]);
+                }
+                $statusSelectionType = $request->input('reel_status_selection_type') === 'manual' ||
+                    $resultingStatus !== $calculatedStatus ? 'manual' : 'automatic';
+                $sourceStatus = $stock->status;
+                $totalOutputLength = $balanceBefore;
+                $widthWaste = round($sourceWidth - ($outputWidth * $rollCount), 3);
+
+                $productionList = ProductionList::create([
+                    'production_item_master_id' => $production->id,
+                    'machine_id' => $request->integer('machines'),
+                    'produced_by' => $request->integer('packed_by'),
+                    'quantity' => $request->input('production_qty'),
+                    'real_id' => null,
+                    'reel_stock_id' => $stock->id,
+                ]);
+
+                ReelStockUsage::create([
+                    'production_id' => $production->id,
+                    'production_list_id' => $productionList->id,
+                    'reel_stock_id' => $stock->id,
+                    'source_status' => $sourceStatus,
+                    'calculated_status' => $calculatedStatus,
+                    'resulting_status' => $resultingStatus,
+                    'status_selection_type' => $statusSelectionType,
+                    'source_width' => $sourceWidth,
+                    'output_roll_width' => $outputWidth,
+                    'roll_length' => $rollLength,
+                    'production_quantity' => $productionQuantity,
+                    'consumed_length' => $consumedLength,
+                    'output_roll_count' => $rollCount,
+                    'total_output_length' => $totalOutputLength,
+                    'width_waste' => $widthWaste,
+                    'balance_before' => $balanceBefore,
+                    'balance_after' => $balanceAfter,
+                    'machine_id' => $request->integer('machines'),
+                    'created_by' => auth()->id(),
+                    'updated_by' => auth()->id(),
+                ]);
+
+                $stock->update([
+                    'balance_length' => $balanceAfter,
+                    'cut_width' => $outputWidth,
+                    'status' => $resultingStatus,
+                ]);
+                ReelStockMovement::create([
+                    'batch_uuid' => (string) Str::uuid(),
+                    'reel_stock_id' => $stock->id,
+                    'transaction_type' => 'production_usage',
+                    'stock_status' => $sourceStatus,
+                    'length' => $consumedLength,
+                    'balance_before' => $balanceBefore,
+                    'balance_after' => $balanceAfter,
+                    'reference_type' => ProductionItemMaster::class,
+                    'reference_id' => $production->id,
+                    'reel_warehouse_id' => $stock->reel_warehouse_id,
+                    'remarks' => "{$productionQuantity} roll(s) × {$rollLength} m used at {$outputWidth} mm width. Status {$statusSelectionType}ally set to " . ucfirst($resultingStatus) . ($statusSelectionType === 'manual' ? ' (calculated: ' . ucfirst($calculatedStatus) . ')' : ''),
+                    'created_by' => auth()->id(),
+                    'created_at' => now(),
+                ]);
+
+                $production->assigned_production_user_id = $request->integer('packed_by');
+                $production->assigned_machine_id = $request->integer('machines');
+                $production->production_status = $newTotal == (float) $production->requested_qty ? 'Completed' : 'Partial';
+                $totalPackedQty = (float) $production->packingLists()->sum('quantity');
+                if ($newTotal == (float) $production->requested_qty) {
+                    $production->status = $totalPackedQty == $newTotal ? 'Completed' : 'Packing Pending';
+                } else {
+                    $production->status = 'Partial';
+                }
+                $production->save();
+            });
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Production saved and Reel stock usage recorded successfully.',
+                'redirect' => route('item.production.edit', ['id' => $request->production_id]),
+            ]);
+        } catch (ValidationException $exception) {
+            throw $exception;
+        } catch (\Throwable $exception) {
+            report($exception);
+            return response()->json([
+                'status' => false,
+                'message' => 'An error occurred while saving production.',
             ], 500);
         }
     }

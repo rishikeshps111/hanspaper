@@ -38,6 +38,12 @@ use App\Http\Controllers\Expenses\ExpenseCategoryController;
 use App\Http\Controllers\Expenses\ExpenseSubcategoryController;
 use App\Http\Controllers\Expenses\ExpenseController;
 use App\Http\Controllers\RealController;
+use App\Http\Controllers\ReelSettingsController;
+use App\Http\Controllers\ReelController;
+use App\Http\Controllers\ReelStockController;
+use App\Http\Controllers\ReelSaleController;
+use App\Http\Controllers\ReelDashboardController;
+use App\Http\Controllers\BarcodeWorkOrderController;
 
 use App\Http\Controllers\Items\ItemController;
 use App\Http\Controllers\Items\ItemTransactionController;
@@ -1071,6 +1077,8 @@ Route::middleware('auth')->group(function () {
 
                 Route::get('/edit/{id}', [ProductionItemMasterController::class, 'edit'])
                         ->name('item.production.edit');
+                Route::get('/reel-stocks/search', [ProductionItemMasterController::class, 'reelStockSearch'])
+                        ->name('item.production.reel-stocks.search');
 
                 Route::post('/store', [ProductionItemMasterController::class, 'store'])
                         ->name('item.production.store');
@@ -1873,6 +1881,47 @@ Route::middleware('auth')->group(function () {
                         ->name('currency.delete');//delete operation
         });//Currencies
         
+        Route::prefix('reels')->name('reels.')->group(function () {
+                Route::get('/dashboard', [ReelDashboardController::class, 'index'])->name('dashboard.index');
+                Route::get('/dashboard/data', [ReelDashboardController::class, 'data'])->name('dashboard.data');
+                Route::get('/dashboard/{reel}/stocks', [ReelDashboardController::class, 'stocks'])->name('dashboard.stocks');
+                Route::post('/dashboard/{reel}/stocks/transfer', [ReelDashboardController::class, 'transfer'])->name('dashboard.stocks.transfer');
+                Route::post('/dashboard/{reel}/stocks/sale', [ReelDashboardController::class, 'sale'])->name('dashboard.stocks.sale');
+                Route::get('/settings', [ReelSettingsController::class, 'index'])->name('settings.index');
+                Route::get('/settings/{type}/data', [ReelSettingsController::class, 'data'])->name('settings.data');
+                Route::post('/settings/{type}', [ReelSettingsController::class, 'store'])->name('settings.store');
+                Route::put('/settings/{type}/{id}', [ReelSettingsController::class, 'update'])->name('settings.update');
+                Route::delete('/settings/{type}/{id}', [ReelSettingsController::class, 'destroy'])->name('settings.destroy');
+
+                Route::get('/manage', [ReelController::class, 'index'])->name('manage.index');
+                Route::get('/manage/data', [ReelController::class, 'data'])->name('manage.data');
+                Route::get('/manage/search', [ReelController::class, 'search'])->name('manage.search');
+                Route::get('/manage/create', [ReelController::class, 'create'])->name('manage.create');
+                Route::post('/manage', [ReelController::class, 'store'])->name('manage.store');
+                Route::get('/manage/{reel}/edit', [ReelController::class, 'edit'])->name('manage.edit');
+                Route::get('/manage/{reel}/details', [ReelController::class, 'details'])->name('manage.details');
+                Route::get('/manage/{reel}/transactions/data', [ReelController::class, 'transactionData'])->name('manage.transactions.data');
+                Route::put('/manage/{reel}', [ReelController::class, 'update'])->name('manage.update');
+                Route::delete('/manage/{reel}', [ReelController::class, 'destroy'])->name('manage.destroy');
+
+                Route::post('/stock/bulk', [ReelStockController::class, 'bulkStore'])->name('stock.bulk-store');
+                Route::get('/manage/{reel}/stock', [ReelStockController::class, 'reelDetails'])->name('manage.stock');
+                Route::get('/manage/{reel}/stock/data', [ReelStockController::class, 'reelStockData'])->name('manage.stock.data');
+                Route::get('/manage/{reel}/stock/stats', [ReelStockController::class, 'reelStockStats'])->name('manage.stock.stats');
+                Route::put('/stock/{stock}/actual-code', [ReelStockController::class, 'updateActualCode'])->name('stock.actual-code.update');
+                Route::get('/stock/{stock}/usage', [ReelStockController::class, 'usage'])->name('stock.usage');
+                Route::post('/manage/{reel}/stock/transfer', [ReelStockController::class, 'transferWarehouse'])->name('manage.stock.transfer');
+
+                Route::get('/sales', [ReelSaleController::class, 'index'])->name('sales.index');
+                Route::get('/sales/data', [ReelSaleController::class, 'data'])->name('sales.data');
+                Route::get('/sales/create', [ReelSaleController::class, 'create'])->name('sales.create');
+                Route::get('/sales/reels/{reel}/availability', [ReelSaleController::class, 'availability'])->name('sales.availability');
+                Route::post('/sales', [ReelSaleController::class, 'store'])->name('sales.store');
+                Route::get('/sales/{sale}/invoice', [ReelSaleController::class, 'invoice'])->name('sales.invoice');
+                Route::get('/sales/{sale}/stocks', [ReelSaleController::class, 'stocks'])->name('sales.stocks');
+                Route::get('/sales/{sale}', [ReelSaleController::class, 'show'])->name('sales.show');
+        });
+
         Route::get('/reals/details/{id}', [RealController::class, 'details'])->name('reals.details');
         Route::get('/reals/get-page/{id}', [RealController::class, 'getPage'])->name('reals.details.getPage');
         Route::get('/reals/show/{id}', [RealController::class, 'show'])->name('reals.show');
@@ -1978,6 +2027,18 @@ Route::prefix('work-order')->group(function () {
         Route::get('/{id}/edit', [PurchaseOrderMasterController::class, 'editWorkOrder'])->name('work-order.edit')->middleware('can:purchaseorder.edit');
         Route::put('/{id}', [PurchaseOrderMasterController::class, 'updateWorkOrder'])->name('work-order.update')->middleware('can:purchaseorder.edit');
 
+});
+
+Route::middleware('auth')->prefix('barcode-work-orders')->name('barcode-work-orders.')->group(function () {
+        Route::get('/', [BarcodeWorkOrderController::class, 'index'])->name('index');
+        Route::get('/data', [BarcodeWorkOrderController::class, 'data'])->name('data');
+        Route::get('/create', [BarcodeWorkOrderController::class, 'create'])->name('create');
+        Route::post('/', [BarcodeWorkOrderController::class, 'store'])->name('store');
+        Route::get('/{barcodeWorkOrder}', [BarcodeWorkOrderController::class, 'show'])->name('show');
+        Route::get('/{barcodeWorkOrder}/edit', [BarcodeWorkOrderController::class, 'edit'])->name('edit');
+        Route::put('/{barcodeWorkOrder}', [BarcodeWorkOrderController::class, 'update'])->name('update');
+        Route::post('/{barcodeWorkOrder}/cancel', [BarcodeWorkOrderController::class, 'cancel'])->name('cancel');
+        Route::post('/{barcodeWorkOrder}/status', [BarcodeWorkOrderController::class, 'changeStatus'])->name('status');
 });
 
 use App\Http\Controllers\Dispatch\DispatchController;

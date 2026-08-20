@@ -21,6 +21,7 @@ class ProductionList extends Model
         'produced_by',
         'quantity',
         'real_id',
+        'reel_stock_id',
     ];
 
     // Relationships

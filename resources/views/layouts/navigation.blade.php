@@ -1,4 +1,3 @@
-
 <!--sidebar wrapper -->
 <div class="sidebar-wrapper" data-simplebar="true">
     <div class="sidebar-header">
@@ -149,36 +148,44 @@
         @endcanany
 
         {{--
-				@canany(['customer.create', 'customer.view'])
-				<li>
-					<a href="javascript:;" class="has-arrow">
-						<div class="parent-icon"><i class="bx bx-group"></i>
-						</div>
-						<div class="menu-title">{{
-						__('customer.customers') }}</div>
-					</a>
-					<ul>
-						@can('customer.create')
-						<li class="{{ request()->is('customer/create') ? 'mm-active' : '' }}">
-											<a href="{{ route('customer.create') }}"><i class='bx bx-radio-circle'></i>{{ __('customer.create_customer') }}</a>
-										</li>
-						@endcan
-						@can('customer.view')
-						<li class="{{ request()->is('customer/list', 'customer/edit*') ? 'mm-active' : '' }}">
-											<a href="{{ route('customer.list') }}"><i class='bx bx-radio-circle'></i>{{ __('customer.list') }}</a>
-										</li>
-						@endcan
-					</ul>
-				</li>
-				@endcanany
-				--}}
+        @canany(['customer.create', 'customer.view'])
+        <li>
+            <a href="javascript:;" class="has-arrow">
+                <div class="parent-icon"><i class="bx bx-group"></i>
+                </div>
+                <div class="menu-title">{{
+                    __('customer.customers') }}</div>
+            </a>
+            <ul>
+                @can('customer.create')
+                <li class="{{ request()->is('customer/create') ? 'mm-active' : '' }}">
+                    <a href="{{ route('customer.create') }}"><i class='bx bx-radio-circle'></i>{{
+                        __('customer.create_customer') }}</a>
+                </li>
+                @endcan
+                @can('customer.view')
+                <li class="{{ request()->is('customer/list', 'customer/edit*') ? 'mm-active' : '' }}">
+                    <a href="{{ route('customer.list') }}"><i class='bx bx-radio-circle'></i>{{ __('customer.list')
+                        }}</a>
+                </li>
+                @endcan
+            </ul>
+        </li>
+        @endcanany
+        --}}
 
 
 
 
 
-        @canany(['item.create', 'item.view', 'item.category.create', 'item.category.view', 'item.brand.create',
-            'item.brand.view'])
+        @canany([
+                'item.create',
+                'item.view',
+                'item.category.create',
+                'item.category.view',
+                'item.brand.create',
+                'item.brand.view'
+            ])
             <li>
                 <a href="javascript:;" class="has-arrow">
                     <div class="parent-icon"><i class="bx bx-package"></i>
@@ -235,44 +242,76 @@
                 </li>
             @endcan
         @endcanany
-        
-        
-    
 
-       <li>
-                    <a  href="javascript:;" class="has-arrow">
-                       <div class="parent-icon"><i class="bx bx-clipboard"></i>
+
+
+
+        @if(false) {{-- Legacy Reals module intentionally hidden; its routes remain available for existing production
+            records. --}}
+            <li>
+                <a href="javascript:;" class="has-arrow">
+                    <div class="parent-icon"><i class="bx bx-clipboard"></i>
                     </div>
-                        <div class="menu-title">{{ __('Reals') }}</div>
-                    </a>
-                    <ul>
-     <li>
-                    <a href="{{ route('reals.index') }}">
-                        <div class="parent-icon"><i class="bx bx-ruler"></i>
-                        </div>
-                        <div class="menu-title">{{ __('Total Reals List') }}</div>
-                    </a>
-                </li>
-              <li>
-                    <a href="{{ route('reals.alllist') }}">
-                        <div class="parent-icon"><i class="bx bx-ruler"></i>
-                        </div>
-                        <div class="menu-title">{{ __('Reals List') }}</div>
-                    </a>
-                </li>
+                    <div class="menu-title">{{ __('Reals') }}</div>
+                </a>
+                <ul>
+                    <li>
+                        <a href="{{ route('reals.index') }}">
+                            <div class="parent-icon"><i class="bx bx-ruler"></i>
+                            </div>
+                            <div class="menu-title">{{ __('Total Reals List') }}</div>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ route('reals.alllist') }}">
+                            <div class="parent-icon"><i class="bx bx-ruler"></i>
+                            </div>
+                            <div class="menu-title">{{ __('Reals List') }}</div>
+                        </a>
+                    </li>
 
 
                     <li>
-                    <a href="{{ route('reals.finished') }}">
-                        <div class="parent-icon"><i class="bx bx-ruler"></i>
-                        </div>
-                        <div class="menu-title">{{ __('Finished Reals') }}</div>
+                        <a href="{{ route('reals.finished') }}">
+                            <div class="parent-icon"><i class="bx bx-ruler"></i>
+                            </div>
+                            <div class="menu-title">{{ __('Finished Reals') }}</div>
+                        </a>
+                    </li>
+
+
+                </ul>
+            </li>
+        @endif
+
+        <li class="{{ request()->routeIs('reels.*') ? 'mm-active' : '' }}">
+            <a href="javascript:;" class="has-arrow">
+                <div class="parent-icon"><i class="bx bx-layer"></i></div>
+                <div class="menu-title">{{ __('Reels') }}</div>
+            </a>
+            <ul>
+                <li class="{{ request()->routeIs('reels.dashboard.*') ? 'mm-active' : '' }}">
+                    <a href="{{ route('reels.dashboard.index') }}">
+                        <i class="bx bx-radio-circle"></i>{{ __('Reel Dashboard') }}
                     </a>
                 </li>
-
-
-                    </ul>
+                <li class="{{ request()->routeIs('reels.settings.*') ? 'mm-active' : '' }}">
+                    <a href="{{ route('reels.settings.index') }}">
+                        <i class="bx bx-radio-circle"></i>{{ __('Reel Settings') }}
+                    </a>
                 </li>
+                {{-- <li class="{{ request()->routeIs('reels.manage.*', 'reels.stock.usage') ? 'mm-active' : '' }}">
+                    <a href="{{ route('reels.manage.index') }}">
+                        <i class="bx bx-radio-circle"></i>{{ __('Manage Reels') }}
+                    </a>
+                </li> --}}
+                <li class="{{ request()->routeIs('reels.sales.*') ? 'mm-active' : '' }}">
+                    <a href="{{ route('reels.sales.index') }}">
+                        <i class="bx bx-radio-circle"></i>{{ __('Reel Sales') }}
+                    </a>
+                </li>
+            </ul>
+        </li>
 
 
 
@@ -282,21 +321,17 @@
 
         @canany(['item.production.index'])
             @can('item.production.index')
-              <!--  <li>
-                    <a href="{{ route('item.production.index') }}">
-                        <div class="parent-icon"><i class="bx bx-purchase-tag-alt"></i>
-                        </div>
-                        <div class="menu-title">{{ __('Production') }}</div>
-                    </a>
-                </li>-->
+                <!--  <li>
+                                    <a href="{{ route('item.production.index') }}">
+                                        <div class="parent-icon"><i class="bx bx-purchase-tag-alt"></i>
+                                        </div>
+                                        <div class="menu-title">{{ __('Production') }}</div>
+                                    </a>
+                                </li>-->
             @endcan
         @endcanany
 
-
-
-
-
-@canany(['item.production.index', 'production.filterlist'])
+        @canany(['item.production.index', 'production.filterlist'])
             <li>
                 <a href="javascript:;" class="has-arrow">
                     <div class="parent-icon"><i class="bx bx-purchase-tag-alt"></i>
@@ -305,43 +340,47 @@
                 </a>
                 <ul>
                     @can('item.production.index')
-                        
+
                         <li class="{{ request()->is('production') ? 'mm-active' : '' }}">
-                            <a href="{{ route('item.production.index') }}"><i class='bx bx-radio-circle'></i>{{ __('Full List') }}</a>
+                            <a href="{{ route('item.production.index') }}"><i
+                                    class='bx bx-radio-circle'></i>{{ __('Full List') }}</a>
                         </li>
                     @endcan
                     @can('production.FilterList')
                         <li class="{{ request()->is('production/view/pending') ? 'mm-active' : '' }}">
-                            <a href="<?php echo url('/production/view/pending');?>"><i
+                            <a href="<?php        echo url('/production/view/pending');?>"><i
                                     class='bx bx-radio-circle'></i>{{ __('Pending List') }}</a>
                         </li>
                     @endcan
-                      @can('production.FilterList')
+                    @can('production.FilterList')
                         <li class="{{ request()->is('production/view/assignpending') ? 'mm-active' : '' }}">
-                            <a href="<?php echo url('/production/view/assignpending');?>"><i
+                            <a href="<?php        echo url('/production/view/assignpending');?>"><i
                                     class='bx bx-radio-circle'></i>{{ __('Assign Pending List') }}</a>
                         </li>
                     @endcan
-                     @can('production.FilterList')
+                    @can('production.FilterList')
                         <li class="{{ request()->is('production/view/packingpending') ? 'mm-active' : '' }}">
-                            <a href="<?php echo url('/production/view/packingpending');?>"><i
+                            <a href="<?php        echo url('/production/view/packingpending');?>"><i
                                     class='bx bx-radio-circle'></i>{{ __('Packing Pending List') }}</a>
                         </li>
                     @endcan
                     @can('production.FilterList')
                         <li class="{{ request()->is('production/view/partial') ? 'mm-active' : '' }}">
-                            <a href="<?php echo url('/production/view/partial');?>"><i class='bx bx-radio-circle'></i>{{ __('Partial List') }}</a>
+                            <a href="<?php        echo url('/production/view/partial');?>"><i
+                                    class='bx bx-radio-circle'></i>{{ __('Partial List') }}</a>
                         </li>
                     @endcan
-                     @can('production.FilterList')
+                    @can('production.FilterList')
                         <li class="{{ request()->is('production/view/completed') ? 'mm-active' : '' }}">
-                            <a href="<?php echo url('/production/view/completed');?>"><i
+                            <a href="<?php        echo url('/production/view/completed');?>"><i
                                     class='bx bx-radio-circle'></i>{{ __('Completed List') }}</a>
                         </li>
                     @endcan
                 </ul>
             </li>
         @endcanany
+
+
 
 
 
@@ -358,13 +397,13 @@
         @canany(['purchaseorder.index'])
             @can('purchaseorder.index')
                 <!--<li>
-                    <a href="{{ route('purchaseorder.index') }}">
-                        <div class="parent-icon"><i class="bx bx-clipboard"></i>
-                        </div>
-                        <div class="menu-title">{{ __('Work Orders') }}</div>
-                    </a>
+                                    <a href="{{ route('purchaseorder.index') }}">
+                                        <div class="parent-icon"><i class="bx bx-clipboard"></i>
+                                        </div>
+                                        <div class="menu-title">{{ __('Work Orders') }}</div>
+                                    </a>
 
-                </li>-->
+                                </li>-->
             @endcan
         @endcanany
 
@@ -374,7 +413,7 @@
 
 
 
-  @canany(['purchaseorder.index', 'purchaseorder.filterlist'])
+        @canany(['purchaseorder.index', 'purchaseorder.filterlist'])
             <li>
                 <a href="javascript:;" class="has-arrow">
                     <div class="parent-icon"><i class="bx bx-clipboard"></i>
@@ -382,38 +421,42 @@
                     <div class="menu-title">{{ __('Work Orders') }}</div>
                 </a>
                 <ul>
-                      @can('purchaseorder.create')
-                        
+                    @can('purchaseorder.create')
+
                         <li class="{{ request()->is('purchaseorder') ? 'mm-active' : '' }}">
-                            <a href="{{ route('purchaseorder.create') }}"><i class='bx bx-radio-circle'></i>{{ __('Create Work Order') }}</a>
+                            <a href="{{ route('purchaseorder.create') }}"><i
+                                    class='bx bx-radio-circle'></i>{{ __('Create Work Order') }}</a>
                         </li>
                     @endcan
                     @can('purchaseorder.index')
-                        
+
                         <li class="{{ request()->is('purchaseorder') ? 'mm-active' : '' }}">
-                            <a href="{{ route('purchaseorder.index') }}"><i class='bx bx-radio-circle'></i>{{ __('Full List') }}</a>
+                            <a href="{{ route('purchaseorder.index') }}"><i
+                                    class='bx bx-radio-circle'></i>{{ __('Full List') }}</a>
                         </li>
                     @endcan
                     @can('purchaseorder.FilterList')
                         <li class="{{ request()->is('purchaseorder/view/pending') ? 'mm-active' : '' }}">
-                            <a href="<?php echo url('/purchaseorder/view/pending');?>"><i
+                            <a href="<?php        echo url('/purchaseorder/view/pending');?>"><i
                                     class='bx bx-radio-circle'></i>{{ __('Pending List') }}</a>
                         </li>
                     @endcan
                     @can('purchaseorder.FilterList')
                         <li class="{{ request()->is('purchaseorder/view/partial') ? 'mm-active' : '' }}">
-                            <a href="<?php echo url('/purchaseorder/view/partial');?>"><i class='bx bx-radio-circle'></i>{{ __('Partial List') }}</a>
+                            <a href="<?php        echo url('/purchaseorder/view/partial');?>"><i
+                                    class='bx bx-radio-circle'></i>{{ __('Partial List') }}</a>
                         </li>
                     @endcan
-                     @can('purchaseorder.FilterList')
+                    @can('purchaseorder.FilterList')
                         <li class="{{ request()->is('purchaseorder/view/completed') ? 'mm-active' : '' }}">
-                            <a href="<?php echo url('/purchaseorder/view/completed');?>"><i
+                            <a href="<?php        echo url('/purchaseorder/view/completed');?>"><i
                                     class='bx bx-radio-circle'></i>{{ __('Completed List') }}</a>
                         </li>
                     @endcan
-                     @can('purchaseorder.FilterList')
+                    @can('purchaseorder.FilterList')
                         <li class="{{ request()->is('purchaseorder/view/cancelled') ? 'mm-active' : '' }}">
-                            <a href="<?php echo url('/purchaseorder/view/cancelled'); ?>"><i class='bx bx-radio-circle'></i>{{ __('Cancelled List') }}</a>
+                            <a href="<?php        echo url('/purchaseorder/view/cancelled'); ?>"><i
+                                    class='bx bx-radio-circle'></i>{{ __('Cancelled List') }}</a>
                         </li>
                     @endcan
                 </ul>
@@ -427,15 +470,34 @@
 
 
 
+        <li class="{{ request()->is('barcode-work-orders*') ? 'mm-active' : '' }}">
+            <a href="javascript:;" class="has-arrow">
+                <div class="parent-icon"><i class="bx bx-barcode"></i></div>
+                <div class="menu-title">Barcode WorkOrder</div>
+            </a>
+            <ul>
+                <li class="{{ request()->routeIs('barcode-work-orders.create') ? 'mm-active' : '' }}">
+                    <a href="{{ route('barcode-work-orders.create') }}">
+                        <i class="bx bx-radio-circle"></i>Create Work Order
+                    </a>
+                </li>
+                <li class="{{ request()->routeIs('barcode-work-orders.index') ? 'mm-active' : '' }}">
+                    <a href="{{ route('barcode-work-orders.index') }}">
+                        <i class="bx bx-radio-circle"></i>Work Order
+                    </a>
+                </li>
+            </ul>
+        </li>
+
         @canany(['dispatch.index'])
             @can('dispatch.index')
                 <!--<li>
-                    <a href="{{ route('dispatch.index') }}">
-                        <div class="parent-icon"><i class="bx bx-package"></i>
-                        </div>
-                        <div class="menu-title">{{ __('Dispatch List') }}</div>
-                    </a>
-                </li>-->
+                                    <a href="{{ route('dispatch.index') }}">
+                                        <div class="parent-icon"><i class="bx bx-package"></i>
+                                        </div>
+                                        <div class="menu-title">{{ __('Dispatch List') }}</div>
+                                    </a>
+                                </li>-->
             @endcan
         @endcanany
 
@@ -444,7 +506,7 @@
 
 
 
- @canany(['dispatch.index', 'dispatch.filterlist'])
+        @canany(['dispatch.index', 'dispatch.filterlist'])
             <li>
                 <a href="javascript:;" class="has-arrow">
                     <div class="parent-icon"><i class="bx bx-package"></i>
@@ -453,25 +515,26 @@
                 </a>
                 <ul>
                     @can('dispatch.index')
-                        
+
                         <li class="{{ request()->is('dispatch') ? 'mm-active' : '' }}">
                             <a href="{{ route('dispatch.index') }}"><i class='bx bx-radio-circle'></i>{{ __('Full List') }}</a>
                         </li>
                     @endcan
                     @can('dispatch.FilterList')
                         <li class="{{ request()->is('dispatch/view/pending') ? 'mm-active' : '' }}">
-                            <a href="<?php echo url('/dispatch/view/pending');?>"><i
+                            <a href="<?php        echo url('/dispatch/view/pending');?>"><i
                                     class='bx bx-radio-circle'></i>{{ __('Pending List') }}</a>
                         </li>
                     @endcan
                     @can('dispatch.FilterList')
                         <li class="{{ request()->is('dispatch/view/partial') ? 'mm-active' : '' }}">
-                            <a href="<?php echo url('/dispatch/view/partial');?>"><i class='bx bx-radio-circle'></i>{{ __('Partial List') }}</a>
+                            <a href="<?php        echo url('/dispatch/view/partial');?>"><i
+                                    class='bx bx-radio-circle'></i>{{ __('Partial List') }}</a>
                         </li>
                     @endcan
-                     @can('dispatch.FilterList')
+                    @can('dispatch.FilterList')
                         <li class="{{ request()->is('dispatch/view/completed') ? 'mm-active' : '' }}">
-                            <a href="<?php echo url('/dispatch/view/completed');?>"><i
+                            <a href="<?php        echo url('/dispatch/view/completed');?>"><i
                                     class='bx bx-radio-circle'></i>{{ __('Completed List') }}</a>
                         </li>
                     @endcan
@@ -494,29 +557,30 @@
 
 
         {{--
-				@canany(['service.create', 'service.view'])
-				<li class="d-none">
-					<a href="javascript:;" class="has-arrow">
-						<div class="parent-icon"><i class="bx bx-package"></i>
-						</div>
-						<div class="menu-title">{{
-						__('service.services') }}</div>
-					</a>
-					<ul>
-						@can('service.create')
-						<li class="{{ request()->is('service/create') ? 'mm-active' : '' }}">
-											<a href="{{ route('service.create') }}"><i class='bx bx-radio-circle'></i>{{ __('service.create') }}</a>
-										</li>
-						@endcan
-						@can('service.view')
-						<li class="{{ request()->is('service/list', 'service/edit*') ? 'mm-active' : '' }}">
-											<a href="{{ route('service.list') }}"><i class='bx bx-radio-circle'></i>{{ __('service.list') }}</a>
-										</li>
-						@endcan
-					</ul>
-				</li>
-				@endcanany
-				--}}
+        @canany(['service.create', 'service.view'])
+        <li class="d-none">
+            <a href="javascript:;" class="has-arrow">
+                <div class="parent-icon"><i class="bx bx-package"></i>
+                </div>
+                <div class="menu-title">{{
+                    __('service.services') }}</div>
+            </a>
+            <ul>
+                @can('service.create')
+                <li class="{{ request()->is('service/create') ? 'mm-active' : '' }}">
+                    <a href="{{ route('service.create') }}"><i class='bx bx-radio-circle'></i>{{ __('service.create')
+                        }}</a>
+                </li>
+                @endcan
+                @can('service.view')
+                <li class="{{ request()->is('service/list', 'service/edit*') ? 'mm-active' : '' }}">
+                    <a href="{{ route('service.list') }}"><i class='bx bx-radio-circle'></i>{{ __('service.list') }}</a>
+                </li>
+                @endcan
+            </ul>
+        </li>
+        @endcanany
+        --}}
 
         @canany(['expense.create', 'expense.view', 'expense.category.view', 'expense.subcategory.view'])
             <li class="d-none">
@@ -529,8 +593,7 @@
                     @can('expense.view')
                         <li
                             class="{{ request()->is('expense/list', 'expense/create', 'expense/edit*', 'expense/print/*') ? 'mm-active' : '' }}">
-                            <a href="{{ route('expense.list') }}"><i
-                                    class='bx bx-radio-circle'></i>{{ __('expense.list') }}</a>
+                            <a href="{{ route('expense.list') }}"><i class='bx bx-radio-circle'></i>{{ __('expense.list') }}</a>
                         </li>
                     @endcan
                     @can('expense.category.view')
@@ -562,20 +625,17 @@
                     <ul>
                         @can('order.create')
                             <li class="{{ request()->is('order/create') ? 'mm-active' : '' }}">
-                                <a href="{{ route('order.create') }}"><i
-                                        class='bx bx-radio-circle'></i>{{ __('order.create') }}</a>
+                                <a href="{{ route('order.create') }}"><i class='bx bx-radio-circle'></i>{{ __('order.create') }}</a>
                             </li>
                         @endcan
                         @can('order.view')
                             <li class="{{ request()->is('order/list', 'order/edit*', 'order/receipt*') ? 'mm-active' : '' }}">
-                                <a href="{{ route('order.list') }}"><i
-                                        class='bx bx-radio-circle'></i>{{ __('order.list') }}</a>
+                                <a href="{{ route('order.list') }}"><i class='bx bx-radio-circle'></i>{{ __('order.list') }}</a>
                             </li>
                         @endcan
                         @can('service.view')
                             <li class="{{ request()->is('service/list', 'service/edit*') ? 'mm-active' : '' }}">
-                                <a href="{{ route('service.list') }}"><i
-                                        class='bx bx-radio-circle'></i>{{ __('service.list') }}</a>
+                                <a href="{{ route('service.list') }}"><i class='bx bx-radio-circle'></i>{{ __('service.list') }}</a>
                             </li>
                         @endcan
                     </ul>
@@ -593,8 +653,7 @@
                         @can('schedule.view')
                             <li
                                 class="{{ request()->is('schedule/list', 'schedule/edit*', 'schedule/receipt*', 'order/timeline/*') ? 'mm-active' : '' }}">
-                                <a href="{{ route('schedule.list') }}"><i
-                                        class='bx bx-radio-circle'></i>{{ __('order.list') }}</a>
+                                <a href="{{ route('schedule.list') }}"><i class='bx bx-radio-circle'></i>{{ __('order.list') }}</a>
                             </li>
                         @endcan
 
@@ -620,7 +679,7 @@
                 <ul>
                     @can('transaction.cash.view')
                         <li class="{{ request()->is('transaction/cash/list') ? 'mm-active' : '' }}">
-                            <a href="{{ route('transaction.cash.list') }}" ><i
+                            <a href="{{ route('transaction.cash.list') }}"><i
                                     class='bx bx-radio-circle'></i>{{ __('payment.cash_in_hand') }}</a>
                         </li>
                     @endcan
@@ -708,10 +767,8 @@
                 </a>
                 <ul>
                     @can('account.view')
-                        <li
-                            class="{{ request()->is('account/list', 'account/create', 'account/edit*') ? 'mm-active' : '' }}">
-                            <a href="{{ route('account.list') }}"><i
-                                    class='bx bx-radio-circle'></i>{{ __('account.list') }}</a>
+                        <li class="{{ request()->is('account/list', 'account/create', 'account/edit*') ? 'mm-active' : '' }}">
+                            <a href="{{ route('account.list') }}"><i class='bx bx-radio-circle'></i>{{ __('account.list') }}</a>
                         </li>
                     @endcan
                     @can('account.group.view')
@@ -735,20 +792,17 @@
                 <ul>
                     @can('profile.edit')
                         <li class="{{ request()->is('profile') ? 'mm-active' : '' }}">
-                            <a href="{{ route('user.profile') }}"><i
-                                    class='bx bx-radio-circle'></i>{{ __('user.profile') }}</a>
+                            <a href="{{ route('user.profile') }}"><i class='bx bx-radio-circle'></i>{{ __('user.profile') }}</a>
                         </li>
                     @endcan
                     @can('user.view')
                         <li class="{{ request()->is('users*') ? 'mm-active' : '' }}">
-                            <a href="{{ route('users.list') }}"><i
-                                    class='bx bx-radio-circle'></i>{{ __('user.users') }}</a>
+                            <a href="{{ route('users.list') }}"><i class='bx bx-radio-circle'></i>{{ __('user.users') }}</a>
                         </li>
                     @endcan
                     @can('role.view')
                         <li class="{{ request()->is('role-and-permission/role*') ? 'mm-active' : '' }}">
-                            <a href="{{ route('roles.list') }}"><i
-                                    class='bx bx-radio-circle'></i>{{ __('app.roles') }}</a>
+                            <a href="{{ route('roles.list') }}"><i class='bx bx-radio-circle'></i>{{ __('app.roles') }}</a>
                         </li>
                     @endcan
                 </ul>
@@ -777,7 +831,7 @@
                 @endcanany
             </li>
         @endcanany
-        
+
         @canany(['reports.packed_by', 'reports.real', 'reports.produced_by', 'reports.machine'])
             <li class="d-none1">
                 <a href="javascript:;" class="has-arrow">
@@ -879,27 +933,33 @@
                         </li>
                     @endcan
                     {{--
-                    	@canany(['report.balance_sheet', 'report.trial_balance'])
-							<li> <a class="has-arrow" href="javascript:;"><i class='bx bx-radio-circle'></i>{{ __('account.accounting') }}</a>
+                    @canany(['report.balance_sheet', 'report.trial_balance'])
+                    <li> <a class="has-arrow" href="javascript:;"><i class='bx bx-radio-circle'></i>{{
+                            __('account.accounting') }}</a>
 
-										<ul>
-											@can('report.balance_sheet')
-											<li class="{{ request()->is('report/balance-sheet') ? 'mm-active' : '' }}">
-												<a href="{{ route('report.balance_sheet') }}"><i class='bx bx-radio-circle'></i>{{ __('account.balance_sheet') }}</a>
-											</li>
-											@endcan
-											@can('report.trial_balance')
-											<li class="{{ request()->is('report/trial-balance') ? 'mm-active' : '' }}">
-												<a href="{{ route('report.trial_balance') }}"><i class='bx bx-radio-circle'></i>{{ __('account.trial_balance') }}</a>
-											</li>
-											@endcan
-										</ul>
+                        <ul>
+                            @can('report.balance_sheet')
+                            <li class="{{ request()->is('report/balance-sheet') ? 'mm-active' : '' }}">
+                                <a href="{{ route('report.balance_sheet') }}"><i class='bx bx-radio-circle'></i>{{
+                                    __('account.balance_sheet') }}</a>
+                            </li>
+                            @endcan
+                            @can('report.trial_balance')
+                            <li class="{{ request()->is('report/trial-balance') ? 'mm-active' : '' }}">
+                                <a href="{{ route('report.trial_balance') }}"><i class='bx bx-radio-circle'></i>{{
+                                    __('account.trial_balance') }}</a>
+                            </li>
+                            @endcan
+                        </ul>
 
-							</li>
-						@endcanany
-						--}}
-                    @canany(['report.item.transaction.batch', 'report.item.transaction.serial',
-                        'report.item.transaction.general'])
+                    </li>
+                    @endcanany
+                    --}}
+                    @canany([
+                            'report.item.transaction.batch',
+                            'report.item.transaction.serial',
+                            'report.item.transaction.general'
+                        ])
                         <li> <a class="has-arrow" href="javascript:;"><i
                                     class='bx bx-radio-circle'></i>{{ __('item.item_transaction') }}</a>
                             <ul>
@@ -1043,8 +1103,7 @@
                     @endcanany
 
                     @canany(['report.gst*'])
-                        <li> <a class="has-arrow" href="javascript:;"><i
-                                    class='bx bx-radio-circle'></i>{{ __('item.gst') }}</a>
+                        <li> <a class="has-arrow" href="javascript:;"><i class='bx bx-radio-circle'></i>{{ __('item.gst') }}</a>
                             <ul>
                                 @can('report.gstr1')
                                     <li class="{{ request()->is('report/gstr-1') ? 'mm-active' : '' }}">
@@ -1126,8 +1185,7 @@
                     @if (app('company')['is_enable_crm'])
                         @can('report.order')
                             <li class="{{ request()->is('report/order') ? 'mm-active' : '' }}">
-                                <a href="{{ route('report.order') }}"><i
-                                        class='bx bx-radio-circle'></i>{{ __('order.report') }}</a>
+                                <a href="{{ route('report.order') }}"><i class='bx bx-radio-circle'></i>{{ __('order.report') }}</a>
                             </li>
                         @endcan
                         @can('report.order.payment')
@@ -1173,8 +1231,7 @@
                 @canany(['tax.view'])
                     <ul>
                         <li class="{{ request()->is('tax*') ? 'mm-active' : '' }}">
-                            <a href="{{ route('tax.list') }}"><i
-                                    class='bx bx-radio-circle'></i>{{ __('tax.tax_rates') }}</a>
+                            <a href="{{ route('tax.list') }}"><i class='bx bx-radio-circle'></i>{{ __('tax.tax_rates') }}</a>
                         </li>
                     </ul>
                 @endcanany
