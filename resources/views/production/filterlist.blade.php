@@ -19,13 +19,13 @@
                 <div class="card-header px-4 py-3 d-flex justify-content-between">
                     <!-- Other content on the left side -->
                     <div>
-                        <h5 class="mb-0 text-uppercase">{{ __('item.production_list') }} {{$status}}</h5>
+                        <h5 class="mb-0 text-uppercase">{{ __('item.production_list') }} {{ $status === 'inprogress' ? 'In Progress' : $status }}</h5>
                     </div>
                    
 
                 </div>
 
-                                 <input type="hidden" name="cstatus" value=" {{$status}}">
+                                 <input type="hidden" name="cstatus" value="{{ $status }}">
 
                 <div class="card-body">
                     <div class="table-responsive">
@@ -46,6 +46,9 @@
                                   <th>{{ __('Ageing') }}</th>
 
                                     <th>{{ __('item.production_status') }}</th>
+                                    @if ($status === 'inprogress')
+                                        <th>{{ __('Current Machine') }}</th>
+                                    @endif
                                     <th>{{ __('item.production_action') }}</th>
                                 </tr>
                             </thead>

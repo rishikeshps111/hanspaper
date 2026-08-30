@@ -17,6 +17,11 @@ use App\Traits\FormatNumber;
 use Illuminate\Http\Request;
 use App\Services\ItemService;
 use App\Models\ProductionList;
+use App\Models\ProductionRun;
+use App\Models\Core;
+use App\Models\CoreStockMovement;
+use App\Models\PackingMaterial;
+use App\Models\PackingMaterialStockMovement;
 use App\Services\CacheService;
 use App\Models\Items\ItemSerial;
 use App\Models\Dispatch\Dispatch;
@@ -187,10 +192,12 @@ class ProductionItemMasterController extends Controller
     public function edit($id)
     {
         $user = auth()->user();
-        $productionItemMaster = ProductionItemMaster::with(['item', 'item.brand', 'requestedBy', 'approvedBy', 'purchaseOrder.party', 'assignedMachine', 'assignedProductionUser', 'assignedPackingUser'])->findOrFail($id);
+        $productionItemMaster = ProductionItemMaster::with(['item', 'item.brand', 'requestedBy', 'approvedBy', 'purchaseOrder.party', 'assignedMachine', 'assignedProductionUser', 'assignedPackingUser', 'activeRun.reelStock.reel', 'activeRun.reelStock.provider', 'activeRun.reelStock.warehouse', 'activeRun.machine', 'activeRun.productionUser', 'activeRun.core'])->findOrFail($id);
         return view('production.edit', [
             'user' => $user,
             'productionItemMaster' => $productionItemMaster,
+            'activeRun' => $productionItemMaster->activeRun,
+            'availableMachines' => Machine::where('status', 'Active')->whereDoesntHave('activeProductionRun')->orderBy('machine_name')->get(),
         ]);
 
     }
@@ -206,6 +213,7 @@ class ProductionItemMasterController extends Controller
             ->where('is_active', true)
             ->whereIn('status', ['full', 'bit'])
             ->where('balance_length', '>', 0)
+            ->whereDoesntHave('activeProductionRun')
             ->when($term !== '', function ($query) use ($term) {
                 $query->where(function ($query) use ($term) {
                     $query->where('stock_code', 'like', "%{$term}%")
@@ -221,23 +229,52 @@ class ProductionItemMasterController extends Controller
         $more = $stocks->count() > $perPage;
 
         return response()->json([
-            'results' => $stocks->take($perPage)->map(fn (ReelStock $stock) => [
-                'id' => $stock->id,
-                'text' => implode(' | ', array_filter([
-                    $stock->stock_code,
-                    $stock->actual_code,
-                    $stock->reel?->code,
-                    $stock->provider?->name,
-                    $stock->warehouse?->name,
-                    number_format((float) $stock->balance_length, 2) . ' m',
-                ])),
-                'status' => $stock->status,
-                'width' => (float) ($stock->reel?->width ?? 0),
-                'balance' => (float) $stock->balance_length,
-                'cut_width' => (float) ($stock->cut_width ?? 0),
-            ])->values(),
+            'results' => $stocks->take($perPage)->map(function (ReelStock $stock) {
+                $sourceWidth = (float) ($stock->reel?->width ?? 0);
+                $cutWidth = (float) ($stock->cut_width ?? 0);
+                $balance = (float) $stock->balance_length;
+                $widthSplits = $cutWidth > 0 ? (int) floor($sourceWidth / $cutWidth) : 0;
+                $actualLength = $stock->status === 'bit' && $widthSplits > 0
+                    ? $balance / $widthSplits
+                    : $balance;
+                $lengthLabel = number_format($actualLength, 2) . ' m';
+
+                return [
+                    'id' => $stock->id,
+                    'text' => implode(' | ', array_filter([
+                        $stock->stock_code,
+                        $stock->actual_code,
+                        $stock->reel?->code,
+                        $stock->provider?->name,
+                        $stock->warehouse?->name,
+                        $lengthLabel,
+                    ])),
+                    'status' => $stock->status,
+                    'width' => $sourceWidth,
+                    'balance' => $balance,
+                    'cut_width' => $cutWidth,
+                    'width_splits' => $widthSplits,
+                    'actual_length' => round($actualLength, 3),
+                ];
+            })->values(),
             'pagination' => ['more' => $more],
         ]);
+    }
+
+    public function coreSearch(Request $request): JsonResponse
+    {
+        $term = trim((string) $request->input('q', ''));
+        $cores = Core::query()->where('is_active', true)
+            ->when($term !== '', fn ($query) => $query->where(fn ($q) => $q->where('code', 'like', "%{$term}%")->orWhere('size_mm', 'like', "%{$term}%")))
+            ->withSum(['productionRuns as reserved_quantity' => fn ($query) => $query->where('status', 'in_progress')], 'core_quantity')
+            ->orderBy('code')->limit(30)->get()
+            ->map(fn (Core $core) => [
+                'id' => $core->id,
+                'text' => "{$core->code} | {$core->size_mm} mm | Available: " . max(0, $core->quantity - (int) $core->reserved_quantity),
+                'code' => $core->code, 'size_mm' => (float) $core->size_mm,
+                'available_quantity' => max(0, $core->quantity - (int) $core->reserved_quantity),
+            ])->filter(fn ($core) => $core['available_quantity'] > 0)->values();
+        return response()->json(['results' => $cores]);
     }
 
     public function update(Request $request, ProductionItemMaster $productionItemMaster)
@@ -258,6 +295,10 @@ class ProductionItemMasterController extends Controller
             'production_id' => 'required|exists:production_item_masters,id',
             'packed_qty' => 'required|numeric|min:1',
             'packed_by' => 'required|exists:employees,id',
+            'packing_box_id' => 'required|exists:packing_materials,id',
+            'packing_box_quantity' => 'required|integer|min:1',
+            'packing_cover_id' => 'required|exists:packing_materials,id',
+            'packing_cover_quantity' => 'required|integer|min:1',
         ]);
 
         if ($validator->fails()) {
@@ -270,7 +311,15 @@ class ProductionItemMasterController extends Controller
         DB::beginTransaction();
 
         try {
-            $productionItemMaster = ProductionItemMaster::findOrFail($request->production_id);
+            $productionItemMaster = ProductionItemMaster::lockForUpdate()->findOrFail($request->production_id);
+            $box = PackingMaterial::lockForUpdate()->findOrFail($request->packing_box_id);
+            $cover = PackingMaterial::lockForUpdate()->findOrFail($request->packing_cover_id);
+            if ($box->type !== 'box' || !$box->is_active || $box->quantity < $request->integer('packing_box_quantity')) {
+                throw ValidationException::withMessages(['packing_box_id' => 'Selected packing box stock is unavailable or insufficient.']);
+            }
+            if ($cover->type !== 'cover' || !$cover->is_active || $cover->quantity < $request->integer('packing_cover_quantity')) {
+                throw ValidationException::withMessages(['packing_cover_id' => 'Selected packing cover stock is unavailable or insufficient.']);
+            }
 
             // Get fresh totals
             $totalProducedQty = $productionItemMaster->productionLists()->sum('quantity');
@@ -279,10 +328,7 @@ class ProductionItemMasterController extends Controller
 
             // Prevent overpacking
             if ($newPackedQty > $totalProducedQty) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Packing quantity exceeds total produced quantity.',
-                ], 400);
+                throw ValidationException::withMessages(['packed_qty' => 'Packing quantity exceeds total produced quantity.']);
             }
 
             // Save new packing record
@@ -290,7 +336,15 @@ class ProductionItemMasterController extends Controller
                 'production_item_master_id' => $productionItemMaster->id,
                 'packed_by' => $request->packed_by,
                 'quantity' => $request->packed_qty,
+                'packing_box_id' => $box->id,
+                'packing_box_quantity' => $request->integer('packing_box_quantity'),
+                'packing_cover_id' => $cover->id,
+                'packing_cover_quantity' => $request->integer('packing_cover_quantity'),
             ]);
+            foreach ([[$box,$request->integer('packing_box_quantity')],[$cover,$request->integer('packing_cover_quantity')]] as [$material,$used]) {
+                $before=$material->quantity;$material->update(['quantity'=>$before-$used,'updated_by'=>auth()->id()]);
+                PackingMaterialStockMovement::create(['packing_material_id'=>$material->id,'transaction_type'=>'packing_usage','quantity_change'=>-$used,'quantity_before'=>$before,'quantity_after'=>$before-$used,'reference_type'=>PackingList::class,'reference_id'=>$record->id,'remarks'=>"{$used} used for packing production #{$productionItemMaster->id}.",'created_by'=>auth()->id()]);
+            }
             
             $productionItemMaster->update([
                 'assigned_packing_user_id' => $request->packed_by
@@ -447,6 +501,9 @@ class ProductionItemMasterController extends Controller
                 'message' => 'Packing record saved and statuses updated successfully.',
                 'redirect' => route('item.production.edit', ['id' => $request->production_id])
             ]);
+        } catch (ValidationException $e) {
+            DB::rollBack();
+            throw $e;
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -815,16 +872,86 @@ class ProductionItemMasterController extends Controller
         }
     }
 
+    public function startProduction(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'production_id' => ['required', 'exists:production_item_masters,id'],
+            'packed_by' => ['required', 'exists:employees,id'],
+            'machines' => ['required', 'exists:machines,id'],
+            'reel_stock_id' => ['required', 'exists:reel_stocks,id'],
+            'core_id' => ['required', 'exists:cores,id'],
+            'roll_length' => ['required', 'numeric', 'gt:0'],
+            'output_roll_width' => ['required', 'numeric', 'gt:0'],
+        ]);
+
+        try {
+            DB::transaction(function () use ($validated) {
+                $production = ProductionItemMaster::lockForUpdate()->findOrFail($validated['production_id']);
+                if (!in_array($production->status, ['Pending', 'Partial'], true)) {
+                    throw ValidationException::withMessages(['production_id' => 'Only Pending or Partial production can be started.']);
+                }
+                if ((float) $production->productionLists()->sum('quantity') >= (float) $production->requested_qty) {
+                    throw ValidationException::withMessages(['production_id' => 'The requested production quantity is already completed.']);
+                }
+
+                $stock = ReelStock::with('reel')->lockForUpdate()->findOrFail($validated['reel_stock_id']);
+                $machine = Machine::lockForUpdate()->findOrFail($validated['machines']);
+                $core = Core::lockForUpdate()->findOrFail($validated['core_id']);
+                if (!$stock->is_active || !in_array($stock->status, ['full', 'bit'], true) || (float) $stock->balance_length <= 0) {
+                    throw ValidationException::withMessages(['reel_stock_id' => 'Only an available Full or Bit reel with balance can be started.']);
+                }
+                if ($machine->status !== 'Active') {
+                    throw ValidationException::withMessages(['machines' => 'Only an active machine can be used.']);
+                }
+                if (ProductionRun::where('status', 'in_progress')->where(function ($query) use ($production, $stock, $machine) {
+                    $query->where('production_id', $production->id)->orWhere('reel_stock_id', $stock->id)->orWhere('machine_id', $machine->id);
+                })->lockForUpdate()->exists()) {
+                    throw ValidationException::withMessages(['reel_stock_id' => 'The production, reel, or machine is already in use. Refresh and choose an available resource.']);
+                }
+
+                $outputWidth = round((float) $validated['output_roll_width'], 3);
+                $sourceWidth = round((float) $stock->reel->width, 3);
+                if ($outputWidth > $sourceWidth || floor($sourceWidth / $outputWidth) < 1) {
+                    throw ValidationException::withMessages(['output_roll_width' => "Output roll width must fit within the source width of {$sourceWidth} mm."]);
+                }
+                if ($stock->cut_width !== null && abs((float) $stock->cut_width - $outputWidth) > 0.0001) {
+                    throw ValidationException::withMessages(['output_roll_width' => "This Bit reel was already slit to {$stock->cut_width} mm."]);
+                }
+
+                if (!$core->is_active || $core->quantity < 1) {
+                    throw ValidationException::withMessages(['core_id' => 'The selected core has no available quantity.']);
+                }
+                $rollLength = round((float) $validated['roll_length'], 3);
+
+                ProductionRun::create([
+                    'production_id' => $production->id, 'reel_stock_id' => $stock->id,
+                    'machine_id' => $machine->id, 'production_user_id' => $validated['packed_by'],
+                    'core_id' => $core->id, 'core_quantity' => null,
+                    'source_reel_status' => $stock->status, 'output_roll_width' => $outputWidth,
+                    'roll_length' => $rollLength, 'production_quantity' => null,
+                    'status' => 'in_progress', 'active_key' => 1, 'started_at' => now(), 'started_by' => auth()->id(),
+                ]);
+                $production->update([
+                    'status' => 'In Progress', 'production_status' => 'In Progress',
+                    'assigned_machine_id' => $machine->id, 'assigned_production_user_id' => $validated['packed_by'],
+                ]);
+            });
+
+            return response()->json(['status' => true, 'message' => 'Production started successfully.', 'redirect' => route('item.production.edit', $validated['production_id'])]);
+        } catch (ValidationException $exception) {
+            throw $exception;
+        } catch (\Throwable $exception) {
+            report($exception);
+            return response()->json(['status' => false, 'message' => 'Unable to start production. Please refresh and try again.'], 500);
+        }
+    }
+
     private function storeProductionWithReelStock(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
             'production_id' => ['required', 'exists:production_item_masters,id'],
-            'production_qty' => ['required', 'numeric', 'min:1'],
-            'packed_by' => ['required', 'exists:employees,id'],
-            'machines' => ['required', 'exists:machines,id'],
-            'reel_stock_id' => ['required', 'exists:reel_stocks,id'],
-            'roll_length' => ['required', 'numeric', 'gt:0'],
-            'output_roll_width' => ['required', 'numeric', 'gt:0'],
+            'production_run_id' => ['required', 'exists:production_runs,id'],
+            'production_qty' => ['required', 'integer', 'min:1'],
             'reel_status_after_usage' => ['required', 'in:bit,finished'],
             'reel_status_selection_type' => ['required', 'in:automatic,manual'],
         ]);
@@ -836,14 +963,19 @@ class ProductionItemMasterController extends Controller
         try {
             DB::transaction(function () use ($request) {
                 $production = ProductionItemMaster::lockForUpdate()->findOrFail($request->integer('production_id'));
-                $stock = ReelStock::with('reel')->lockForUpdate()->findOrFail($request->integer('reel_stock_id'));
+                $run = ProductionRun::lockForUpdate()->findOrFail($request->integer('production_run_id'));
+                if ($run->production_id !== $production->id || $run->status !== 'in_progress' || $run->active_key !== 1) {
+                    throw ValidationException::withMessages(['production_run_id' => 'This production run is no longer active. Refresh the page.']);
+                }
+                $stock = ReelStock::with('reel')->lockForUpdate()->findOrFail($run->reel_stock_id);
+                $core = $run->core_id ? Core::lockForUpdate()->findOrFail($run->core_id) : null;
 
                 if (!$stock->is_active || !in_array($stock->status, ['full', 'bit'], true)) {
                     throw ValidationException::withMessages(['reel_stock_id' => 'Only active Full or Bit Reel stock can be used.']);
                 }
 
-                $rollLength = round((float) $request->input('roll_length'), 3);
-                $outputWidth = round((float) $request->input('output_roll_width'), 3);
+                $rollLength = round((float) $run->roll_length, 3);
+                $outputWidth = round((float) $run->output_roll_width, 3);
                 $sourceWidth = round((float) $stock->reel->width, 3);
                 if ($outputWidth > $sourceWidth) {
                     throw ValidationException::withMessages([
@@ -857,11 +989,15 @@ class ProductionItemMasterController extends Controller
                 }
 
                 $totalProducedQty = (float) $production->productionLists()->sum('quantity');
-                $productionQuantity = round((float) $request->input('production_qty'), 3);
-                $newTotal = $totalProducedQty + $productionQuantity;
-                if ($newTotal > (float) $production->requested_qty) {
-                    throw ValidationException::withMessages(['production_qty' => 'Production quantity exceeds requested quantity.']);
+                $productionQuantity = (int) $request->input('production_qty');
+                $coreQuantity = $productionQuantity;
+                if ($core && $core->quantity < $coreQuantity) {
+                    throw ValidationException::withMessages(['core_id' => 'Core stock is no longer sufficient to finish this production.']);
                 }
+                $orderRemaining = max(0, (float) $production->requested_qty - $totalProducedQty);
+                $orderQuantity = min($productionQuantity, $orderRemaining);
+                $excessStockQuantity = max(0, $productionQuantity - $orderQuantity);
+                $newTotal = $totalProducedQty + $orderQuantity;
 
                 if ($stock->cut_width !== null && abs((float) $stock->cut_width - $outputWidth) > 0.0001) {
                     throw ValidationException::withMessages([
@@ -893,18 +1029,40 @@ class ProductionItemMasterController extends Controller
                 $sourceStatus = $stock->status;
                 $totalOutputLength = $balanceBefore;
                 $widthWaste = round($sourceWidth - ($outputWidth * $rollCount), 3);
+                $physicalRemainingLength = round($balanceAfter / $rollCount, 3);
+                $wastageOutputLength = $resultingStatus === 'finished' ? $balanceAfter : 0;
+                $physicalWastageLength = $resultingStatus === 'finished' ? $physicalRemainingLength : 0;
+                $stockBalanceAfter = $resultingStatus === 'finished' ? 0 : $balanceAfter;
 
                 $productionList = ProductionList::create([
                     'production_item_master_id' => $production->id,
-                    'machine_id' => $request->integer('machines'),
-                    'produced_by' => $request->integer('packed_by'),
-                    'quantity' => $request->input('production_qty'),
+                    'production_run_id' => $run->id,
+                    'machine_id' => $run->machine_id,
+                    'produced_by' => $run->production_user_id,
+                    'quantity' => $orderQuantity,
+                    'actual_quantity' => $productionQuantity,
+                    'excess_stock_quantity' => $excessStockQuantity,
                     'real_id' => null,
                     'reel_stock_id' => $stock->id,
+                    'core_id' => $core?->id,
+                    'core_quantity' => $core ? $coreQuantity : null,
                 ]);
+
+                if ($core) {
+                    $coreBefore = $core->quantity;
+                    $core->update(['quantity' => $coreBefore - $coreQuantity, 'updated_by' => auth()->id()]);
+                    CoreStockMovement::create([
+                        'core_id' => $core->id, 'transaction_type' => 'production_usage',
+                        'quantity_change' => -$coreQuantity, 'quantity_before' => $coreBefore,
+                        'quantity_after' => $coreBefore - $coreQuantity,
+                        'reference_type' => ProductionItemMaster::class, 'reference_id' => $production->id,
+                        'remarks' => "{$coreQuantity} core(s) used for production #{$production->id}.", 'created_by' => auth()->id(),
+                    ]);
+                }
 
                 ReelStockUsage::create([
                     'production_id' => $production->id,
+                    'production_run_id' => $run->id,
                     'production_list_id' => $productionList->id,
                     'reel_stock_id' => $stock->id,
                     'source_status' => $sourceStatus,
@@ -920,14 +1078,18 @@ class ProductionItemMasterController extends Controller
                     'total_output_length' => $totalOutputLength,
                     'width_waste' => $widthWaste,
                     'balance_before' => $balanceBefore,
-                    'balance_after' => $balanceAfter,
-                    'machine_id' => $request->integer('machines'),
+                    'balance_after' => $stockBalanceAfter,
+                    'remaining_output_length' => $balanceAfter,
+                    'physical_remaining_length' => $physicalRemainingLength,
+                    'wastage_output_length' => $wastageOutputLength,
+                    'physical_wastage_length' => $physicalWastageLength,
+                    'machine_id' => $run->machine_id,
                     'created_by' => auth()->id(),
                     'updated_by' => auth()->id(),
                 ]);
 
                 $stock->update([
-                    'balance_length' => $balanceAfter,
+                    'balance_length' => $stockBalanceAfter,
                     'cut_width' => $outputWidth,
                     'status' => $resultingStatus,
                 ]);
@@ -938,17 +1100,33 @@ class ProductionItemMasterController extends Controller
                     'stock_status' => $sourceStatus,
                     'length' => $consumedLength,
                     'balance_before' => $balanceBefore,
-                    'balance_after' => $balanceAfter,
+                    'balance_after' => $stockBalanceAfter,
                     'reference_type' => ProductionItemMaster::class,
                     'reference_id' => $production->id,
                     'reel_warehouse_id' => $stock->reel_warehouse_id,
-                    'remarks' => "{$productionQuantity} roll(s) × {$rollLength} m used at {$outputWidth} mm width. Status {$statusSelectionType}ally set to " . ucfirst($resultingStatus) . ($statusSelectionType === 'manual' ? ' (calculated: ' . ucfirst($calculatedStatus) . ')' : ''),
+                    'remarks' => "{$productionQuantity} roll(s) × {$rollLength} m used at {$outputWidth} mm width. Status set to " . ucfirst($resultingStatus) . '.',
                     'created_by' => auth()->id(),
                     'created_at' => now(),
                 ]);
+                if ($wastageOutputLength > 0) {
+                    ReelStockMovement::create([
+                        'batch_uuid' => (string) Str::uuid(), 'reel_stock_id' => $stock->id,
+                        'transaction_type' => 'production_wastage', 'stock_status' => 'finished',
+                        'length' => $wastageOutputLength, 'balance_before' => $balanceAfter, 'balance_after' => 0,
+                        'reference_type' => ProductionItemMaster::class, 'reference_id' => $production->id,
+                        'reel_warehouse_id' => $stock->reel_warehouse_id,
+                        'remarks' => "Finished reel: {$wastageOutputLength} m output length ({$physicalWastageLength} m actual physical length) recorded as wastage.",
+                        'created_by' => auth()->id(), 'created_at' => now(),
+                    ]);
+                }
 
-                $production->assigned_production_user_id = $request->integer('packed_by');
-                $production->assigned_machine_id = $request->integer('machines');
+                $run->update([
+                    'production_quantity' => $productionQuantity, 'core_quantity' => $coreQuantity,
+                    'status' => 'finished', 'active_key' => null,
+                    'finished_at' => now(), 'finished_by' => auth()->id(),
+                ]);
+                $production->assigned_production_user_id = $run->production_user_id;
+                $production->assigned_machine_id = $run->machine_id;
                 $production->production_status = $newTotal == (float) $production->requested_qty ? 'Completed' : 'Partial';
                 $totalPackedQty = (float) $production->packingLists()->sum('quantity');
                 if ($newTotal == (float) $production->requested_qty) {
@@ -957,11 +1135,22 @@ class ProductionItemMasterController extends Controller
                     $production->status = 'Partial';
                 }
                 $production->save();
+
+                if ($excessStockQuantity > 0) {
+                    ItemTransaction::where('item_id', $production->item_id)->increment('quantity', $excessStockQuantity);
+                    ItemTransaction::where('item_id', $production->item_id)->increment('avaquantity', $excessStockQuantity);
+                    $generalQuantity = ItemGeneralQuantity::firstOrCreate(
+                        ['item_id' => $production->item_id, 'warehouse_id' => 1],
+                        ['quantity' => 0, 'avaquantity' => 0]
+                    );
+                    $generalQuantity->increment('quantity', $excessStockQuantity);
+                    $generalQuantity->increment('avaquantity', $excessStockQuantity);
+                }
             });
 
             return response()->json([
                 'status' => true,
-                'message' => 'Production saved and Reel stock usage recorded successfully.',
+                'message' => 'Production updated successfully. Reel, core, wastage, and excess stock were recorded.',
                 'redirect' => route('item.production.edit', ['id' => $request->production_id]),
             ]);
         } catch (ValidationException $exception) {
@@ -1258,7 +1447,7 @@ if ($status == "pending") {
                 $customers = PurchaseOrderMaster::with('party','productionmaster')
             ->select('customer_id')
  ->whereHas('productionmaster', function ($query) {
-    $query->whereIn('status', array('Partial', 'Progress'));
+    $query->whereIn('status', ['Partial', 'Progress']);
 })
             ->distinct()
             ->get()
@@ -1269,6 +1458,15 @@ if ($status == "pending") {
                 ];
             });
 
+            }
+            if ($status == "inprogress") {
+                $customers = PurchaseOrderMaster::with('party', 'productionmaster')
+                    ->select('customer_id')
+                    ->whereHas('productionmaster', fn ($query) => $query->where('status', 'In Progress'))
+                    ->distinct()->get()->map(fn ($item) => [
+                        'id' => $item->customer_id,
+                        'name' => $item->party ? $item->party->first_name . ' ' . $item->party->last_name : 'Unknown',
+                    ]);
             }
             if ($status == "completed") {
                 $ccstatus1 = 'Completed';
@@ -1315,7 +1513,17 @@ if ($status == "pending") {
         // $query = PurchaseOrderMaster::with('party');
 
         //  $productionLists = ProductionItemMaster::with('item','requestedBy','approvedBy','purchaseOrder')->get();
-        $query = ProductionItemMaster::with('item', 'item.brand', 'item.category', 'requestedBy', 'approvedBy', 'purchaseOrder', 'purchaseOrder.party', 'productionLists', 'packingLists');
+        $query = ProductionItemMaster::with(
+            'item',
+            'item.brand',
+            'item.category',
+            'requestedBy',
+            'approvedBy',
+            'purchaseOrder',
+            'purchaseOrder.party',
+            'productionLists',
+            'packingLists'
+        );
 
 
         if ($request->filled('customer_id')) {
@@ -1535,6 +1743,7 @@ if ($status == "pending") {
                     'Completed' => 'bg-success text-white',
                     'Partial' => 'bg-info text-dark',
                     'Progress' => 'bg-primary text-white',
+                    'In Progress' => 'bg-primary text-white',
                     'Cancelled' => 'bg-danger text-white',
                     default => 'bg-secondary text-white',
                 };
@@ -1599,9 +1808,20 @@ if ($status == "pending") {
         // $query = PurchaseOrderMaster::with('party');
 
         //  $productionLists = ProductionItemMaster::with('item','requestedBy','approvedBy','purchaseOrder')->get();
-        $query = ProductionItemMaster::with('item', 'item.brand', 'item.category', 'requestedBy', 'approvedBy', 'purchaseOrder', 'purchaseOrder.party', 'productionLists', 'packingLists');
+        $query = ProductionItemMaster::with(
+            'item',
+            'item.brand',
+            'item.category',
+            'requestedBy',
+            'approvedBy',
+            'purchaseOrder',
+            'purchaseOrder.party',
+            'productionLists',
+            'packingLists',
+            'activeRun.machine'
+        );
 
-        $ccstatus = $request->cstatus;
+        $ccstatus = trim((string) $request->cstatus);
         if ($request->filled('cstatus')) {
 
             if ($ccstatus == "pending") {
@@ -1628,8 +1848,11 @@ if ($status == "pending") {
                 $ccstatus1 = 'Partial';
                 $ccstatus2 = 'Progress';
 
-                $query->whereIn('status', array($ccstatus1, $ccstatus2));
+                $query->whereIn('status', [$ccstatus1, $ccstatus2]);
 
+            }
+            if ($ccstatus == "inprogress") {
+                $query->where('status', 'In Progress');
             }
             if ($ccstatus == "completed") {
                 $ccstatus1 = 'Completed';
@@ -1858,12 +2081,20 @@ if ($status == "pending") {
                     'Completed' => 'bg-success text-white',
                     'Partial' => 'bg-info text-dark',
                     'Progress' => 'bg-primary text-white',
+                    'In Progress' => 'bg-primary text-white',
                     'Cancelled' => 'bg-danger text-white',
                     default => 'bg-secondary text-white',
                 };
                 return '<span class="badge rounded-pill px-3 py-2 fw-semibold text-uppercase shadow-sm ' . $statusClass . '">' . $row->status . '</span>';
 
 
+            })
+            ->addColumn('current_machine', function ($row) {
+                $machineName = $row->activeRun?->machine?->machine_name;
+
+                return $machineName
+                    ? '<span class="badge bg-primary text-white">' . e($machineName) . '</span>'
+                    : '<span class="text-muted">Not Available</span>';
             })
              ->editColumn('action', function ($row) {
                  $editUrl = route('item.production.edit', ['id' => $row->id]);
@@ -1902,7 +2133,7 @@ if ($status == "pending") {
             })
 
 
-            ->rawColumns(['brand', 'category', 'requested_qty', 'production_remaining_qty', 'packing_remaining_qty', 'due_date', 'ageing', 'customer', 'work_order', 'action', 'ageing', 'status'])
+            ->rawColumns(['brand', 'category', 'requested_qty', 'production_remaining_qty', 'packing_remaining_qty', 'due_date', 'ageing', 'customer', 'work_order', 'action', 'status', 'current_machine'])
             ->make(true);
     }
 
@@ -2008,7 +2239,7 @@ if ($status == "pending") {
                     $customers =Item::with('itemTransaction','productionmaster')
             ->select('*')
    ->whereHas('productionmaster', function ($query) {
-    $query->whereIn('status', array('Partial', 'Progress'));
+    $query->whereIn('status', ['Partial', 'Progress']);
 })
             ->distinct('id')
             ->get()
@@ -2019,6 +2250,12 @@ if ($status == "pending") {
                 ];
             });
 
+            }
+            if ($status == "inprogress") {
+                $customers = Item::with('itemTransaction', 'productionmaster')
+                    ->select('*')
+                    ->whereHas('productionmaster', fn ($query) => $query->where('status', 'In Progress'))
+                    ->distinct('id')->get()->map(fn ($row) => ['id' => $row->id, 'name' => $row->name]);
             }
             if ($status == "completed") {
                 $ccstatus1 = 'Completed';

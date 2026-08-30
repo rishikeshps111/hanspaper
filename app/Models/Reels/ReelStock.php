@@ -5,6 +5,7 @@ namespace App\Models\Reels;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\ProductionRun;
 
 class ReelStock extends Model
 {
@@ -64,4 +65,6 @@ class ReelStock extends Model
     {
         return $this->hasMany(ReelStockUsage::class);
     }
+    public function productionRuns(): HasMany { return $this->hasMany(ProductionRun::class); }
+    public function activeProductionRun() { return $this->hasOne(ProductionRun::class)->where('status', 'in_progress'); }
 }

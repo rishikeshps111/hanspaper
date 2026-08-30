@@ -438,7 +438,7 @@ $(function () {
                         select.val(initialStatus);
                     }
 
-                    var statuses = ['Assigning Pending', 'Pending', 'Packing Pending', 'Completed', 'Partial', 'Progress', 'Cancelled'];
+                    var statuses = ['Assigning Pending', 'Pending', 'Packing Pending', 'Completed', 'Partial', 'Progress', 'In Progress', 'Cancelled'];
                     statuses.forEach(function (status) {
                         select.append('<option value="' + status + '">' + status + '</option>');
                     });

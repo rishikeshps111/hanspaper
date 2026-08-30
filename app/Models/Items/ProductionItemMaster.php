@@ -9,6 +9,7 @@ use App\Models\Items\Item;
 use App\Models\PackingList;
 use App\Models\ProductionList;
 use App\Models\Machines\Machine;
+use App\Models\ProductionRun;
 use App\Models\Items\ItemCategory;
 use App\Models\Items\ProductionItem;
 use Illuminate\Database\Eloquent\Model;
@@ -105,6 +106,16 @@ class ProductionItemMaster extends Model
     public function assignedPackingUser()
     {
         return $this->belongsTo(Employee::class, 'assigned_packing_user_id');
+    }
+
+    public function productionRuns(): HasMany
+    {
+        return $this->hasMany(ProductionRun::class, 'production_id');
+    }
+
+    public function activeRun(): HasOne
+    {
+        return $this->hasOne(ProductionRun::class, 'production_id')->where('status', 'in_progress');
     }
     
      public function dispatch()

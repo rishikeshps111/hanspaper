@@ -95,7 +95,7 @@ class DashboardController extends Controller
         $totalPartiallyDispatchedPending = Dispatch::where('status', 'Dispatched')->count();
                 $totalPartial = ProductionItemMaster::where('status', 'Partial')->count();
 
- $categoryPendingProductions = ItemCategory::select(
+        $categoryPendingProductions = ItemCategory::select(
             'item_categories.id',
             'item_categories.name'
         )
@@ -107,6 +107,26 @@ class DashboardController extends Controller
         SUM(CASE WHEN production_item_masters.status = 'Packing Pending' THEN 1 ELSE 0 END) as packing_pending_count,
         SUM(CASE WHEN production_item_masters.status = 'Assigning Pending' THEN 1 ELSE 0 END) as assigning_pending_count
     ")
+            ->get();
+
+        $inProgressProductions = ProductionItemMaster::query()
+            ->where('status', 'In Progress')
+            ->whereHas('activeRun')
+            ->with([
+                'item:id,name',
+                'purchaseOrder:id,purchase_order_id,customer_id',
+                'purchaseOrder.party:id,first_name,last_name',
+                'activeRun.machine:id,machine_name',
+                'activeRun.productionUser:id,full_name',
+                'activeRun.reelStock.reel:id,code',
+            ])
+            ->withSum('productionLists as completed_quantity', 'quantity')
+            ->orderByDesc(
+                \App\Models\ProductionRun::select('started_at')
+                    ->whereColumn('production_runs.production_id', 'production_item_masters.id')
+                    ->where('production_runs.status', 'in_progress')
+                    ->limit(1)
+            )
             ->get();
 
 
@@ -136,8 +156,78 @@ class DashboardController extends Controller
              'totalDispatchPending',
             'totalPartiallyDispatchedPending',
             'totalPartial',
-             'categoryPendingProductions'
+             'categoryPendingProductions',
+             'inProgressProductions'
                                         ));
+    }
+
+    public function inProgressProductionDetails(ProductionItemMaster $production): \Illuminate\Http\JsonResponse
+    {
+        $production->load([
+            'item:id,name',
+            'purchaseOrder:id,purchase_order_id,customer_id',
+            'purchaseOrder.party:id,first_name,last_name',
+            'activeRun.reelStock.reel',
+            'activeRun.machine',
+            'activeRun.productionUser',
+            'activeRun.core',
+            'productionLists.machine',
+            'productionLists.producedBy',
+            'productionLists.productionRun',
+            'productionLists.core',
+            'productionLists.reelStockUsage.stock.reel',
+        ])->loadSum('productionLists as completed_quantity', 'quantity');
+
+        $run = $production->activeRun;
+        abort_unless($production->status === 'In Progress' && $run, 404, 'This production is no longer in progress.');
+
+        $completed = (float) ($production->completed_quantity ?? 0);
+        $current = (float) $run->production_quantity;
+        $remaining = max(0, (float) $production->requested_qty - $completed - $current);
+        $party = $production->purchaseOrder?->party;
+
+        return response()->json([
+            'work_order_id' => $production->purchaseOrder?->purchase_order_id ?? 'Not Available',
+            'production_id' => $production->id,
+            'customer' => trim(($party?->first_name ?? '') . ' ' . ($party?->last_name ?? '')) ?: 'Not Available',
+            'product' => $production->item?->name ?? 'Not Available',
+            'requested_quantity' => (float) $production->requested_qty,
+            'completed_quantity' => $completed,
+            'current_quantity' => $current,
+            'remaining_quantity' => $remaining,
+            'stock_code' => $run->reelStock?->stock_code ?? 'Not Available',
+            'reel_code' => $run->reelStock?->reel?->code ?? 'Not Available',
+            'machine' => $run->machine?->machine_name ?? 'Not Available',
+            'production_user' => $run->productionUser?->full_name ?? 'Not Available',
+            'core_code' => $run->core?->code ?? 'Not Available',
+            'core_size' => $run->core ? (float) $run->core->size_mm : null,
+            'core_quantity' => (int) $run->core_quantity,
+            'output_roll_width' => (float) $run->output_roll_width,
+            'roll_length' => (float) $run->roll_length,
+            'started_at' => $run->started_at?->format('d M Y h:i a') ?? 'Not Available',
+            'completed_runs' => $production->productionLists
+                ->sortByDesc('created_at')
+                ->values()
+                ->map(function ($entry) {
+                    $usage = $entry->reelStockUsage;
+                    return [
+                        'quantity' => (float) $entry->quantity,
+                        'stock_code' => $usage?->stock?->stock_code ?? 'Not Available',
+                        'reel_code' => $usage?->stock?->reel?->code ?? 'Not Available',
+                        'machine' => $entry->machine?->machine_name ?? 'Not Available',
+                        'production_user' => $entry->producedBy?->full_name ?? 'Not Available',
+                        'core_code' => $entry->core?->code ?? 'Not Available',
+                        'core_size' => $entry->core ? (float) $entry->core->size_mm : null,
+                        'core_quantity' => (int) ($entry->core_quantity ?? 0),
+                        'output_roll_width' => $usage ? (float) $usage->output_roll_width : null,
+                        'roll_length' => $usage ? (float) $usage->roll_length : null,
+                        'completed_at' => $entry->productionRun?->finished_at?->format('d M Y h:i a')
+                            ?? $entry->created_at?->format('d M Y h:i a')
+                            ?? 'Not Available',
+                    ];
+                }),
+            'track_url' => route('item.production.edit', ['id' => $production->id]),
+        ]);
     }
 
     public function saleVsPurchase()

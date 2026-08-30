@@ -44,6 +44,8 @@ use App\Http\Controllers\ReelStockController;
 use App\Http\Controllers\ReelSaleController;
 use App\Http\Controllers\ReelDashboardController;
 use App\Http\Controllers\BarcodeWorkOrderController;
+use App\Http\Controllers\CoreController;
+use App\Http\Controllers\PackingMaterialController;
 
 use App\Http\Controllers\Items\ItemController;
 use App\Http\Controllers\Items\ItemTransactionController;
@@ -154,6 +156,25 @@ Route::middleware('auth')->group(function () {
          * */
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
         Route::get('dashboard/category-items', [DashboardController::class, 'getCategoryItems'])->name('dashboard.category-items');
+        Route::get('dashboard/in-progress-productions/{production}', [DashboardController::class, 'inProgressProductionDetails'])
+                ->name('dashboard.in-progress-production.details');
+        Route::prefix('cores')->name('cores.')->group(function () {
+                Route::get('/', [CoreController::class, 'index'])->name('index');
+                Route::get('/data', [CoreController::class, 'data'])->name('data');
+                Route::get('/{core}/history', [CoreController::class, 'history'])->name('history');
+                Route::post('/', [CoreController::class, 'store'])->name('store');
+                Route::put('/{core}', [CoreController::class, 'update'])->name('update');
+                Route::post('/{core}/adjust', [CoreController::class, 'adjust'])->name('adjust');
+        });
+        Route::prefix('packing-materials/{type}')->name('packing-materials.')->group(function () {
+                Route::get('/', [PackingMaterialController::class, 'index'])->name('index');
+                Route::get('/data', [PackingMaterialController::class, 'data'])->name('data');
+                Route::get('/search', [PackingMaterialController::class, 'search'])->name('search');
+                Route::post('/', [PackingMaterialController::class, 'store'])->name('store');
+                Route::put('/{material}', [PackingMaterialController::class, 'update'])->name('update');
+                Route::post('/{material}/adjust', [PackingMaterialController::class, 'adjust'])->name('adjust');
+                Route::get('/{material}/history', [PackingMaterialController::class, 'history'])->name('history');
+        });
         /**
          * Settings
          */
@@ -1079,12 +1100,16 @@ Route::middleware('auth')->group(function () {
                         ->name('item.production.edit');
                 Route::get('/reel-stocks/search', [ProductionItemMasterController::class, 'reelStockSearch'])
                         ->name('item.production.reel-stocks.search');
+                Route::get('/cores/search', [ProductionItemMasterController::class, 'coreSearch'])
+                        ->name('item.production.cores.search');
 
                 Route::post('/store', [ProductionItemMasterController::class, 'store'])
                         ->name('item.production.store');
 
                 Route::post('/store-production', [ProductionItemMasterController::class, 'storeProduction'])
                         ->name('item.production.store-production');
+                Route::post('/start-production', [ProductionItemMasterController::class, 'startProduction'])
+                        ->name('item.production.start-production');
                 Route::post('/store-packing', [ProductionItemMasterController::class, 'storePacking'])
                         ->name('item.production.store-packing');
 

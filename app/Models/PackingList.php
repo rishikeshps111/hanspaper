@@ -17,6 +17,7 @@ class PackingList extends Model
         'production_item_master_id',
         'packed_by',
         'quantity',
+        'packing_box_id','packing_box_quantity','packing_cover_id','packing_cover_quantity',
     ];
 
     // Relationships
@@ -30,4 +31,6 @@ class PackingList extends Model
     {
         return $this->belongsTo(Employee::class, 'packed_by');
     }
+    public function packingBox(){ return $this->belongsTo(PackingMaterial::class,'packing_box_id'); }
+    public function packingCover(){ return $this->belongsTo(PackingMaterial::class,'packing_cover_id'); }
 }

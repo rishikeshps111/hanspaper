@@ -230,6 +230,22 @@
                 </li>
             @endcan
         @endcanany
+        <li class="{{ request()->routeIs('cores.*') ? 'mm-active' : '' }}">
+            <a href="{{ route('cores.index') }}">
+                <div class="parent-icon"><i class="bx bx-cylinder"></i></div>
+                <div class="menu-title">{{ __('Core Stock') }}</div>
+            </a>
+        </li>
+        <li class="{{ request()->is('packing-materials/box*') ? 'mm-active' : '' }}"><a
+                href="{{ route('packing-materials.index', 'box') }}">
+                <div class="parent-icon"><i class="bx bx-package"></i></div>
+                <div class="menu-title">Packing Box Stock</div>
+            </a></li>
+        <li class="{{ request()->is('packing-materials/cover*') ? 'mm-active' : '' }}"><a
+                href="{{ route('packing-materials.index', 'cover') }}">
+                <div class="parent-icon"><i class="bx bx-layer"></i></div>
+                <div class="menu-title">Packing Cover Stock</div>
+            </a></li>
         @canany(['machine.index'])
             @can('machine.index')
                 <li>
@@ -322,12 +338,12 @@
         @canany(['item.production.index'])
             @can('item.production.index')
                 <!--  <li>
-                                    <a href="{{ route('item.production.index') }}">
-                                        <div class="parent-icon"><i class="bx bx-purchase-tag-alt"></i>
-                                        </div>
-                                        <div class="menu-title">{{ __('Production') }}</div>
-                                    </a>
-                                </li>-->
+                                            <a href="{{ route('item.production.index') }}">
+                                                <div class="parent-icon"><i class="bx bx-purchase-tag-alt"></i>
+                                                </div>
+                                                <div class="menu-title">{{ __('Production') }}</div>
+                                            </a>
+                                        </li>-->
             @endcan
         @endcanany
 
@@ -371,6 +387,12 @@
                         </li>
                     @endcan
                     @can('production.FilterList')
+                        <li class="{{ request()->is('production/view/inprogress') ? 'mm-active' : '' }}">
+                            <a href="{{ url('/production/view/inprogress') }}"><i
+                                    class='bx bx-radio-circle'></i>{{ __('In Progress List') }}</a>
+                        </li>
+                    @endcan
+                    @can('production.FilterList')
                         <li class="{{ request()->is('production/view/completed') ? 'mm-active' : '' }}">
                             <a href="<?php        echo url('/production/view/completed');?>"><i
                                     class='bx bx-radio-circle'></i>{{ __('Completed List') }}</a>
@@ -397,13 +419,13 @@
         @canany(['purchaseorder.index'])
             @can('purchaseorder.index')
                 <!--<li>
-                                    <a href="{{ route('purchaseorder.index') }}">
-                                        <div class="parent-icon"><i class="bx bx-clipboard"></i>
-                                        </div>
-                                        <div class="menu-title">{{ __('Work Orders') }}</div>
-                                    </a>
+                                            <a href="{{ route('purchaseorder.index') }}">
+                                                <div class="parent-icon"><i class="bx bx-clipboard"></i>
+                                                </div>
+                                                <div class="menu-title">{{ __('Work Orders') }}</div>
+                                            </a>
 
-                                </li>-->
+                                        </li>-->
             @endcan
         @endcanany
 
@@ -469,7 +491,7 @@
 
 
 
-
+        {{--
         <li class="{{ request()->is('barcode-work-orders*') ? 'mm-active' : '' }}">
             <a href="javascript:;" class="has-arrow">
                 <div class="parent-icon"><i class="bx bx-barcode"></i></div>
@@ -487,17 +509,17 @@
                     </a>
                 </li>
             </ul>
-        </li>
+        </li> --}}
 
         @canany(['dispatch.index'])
             @can('dispatch.index')
                 <!--<li>
-                                    <a href="{{ route('dispatch.index') }}">
-                                        <div class="parent-icon"><i class="bx bx-package"></i>
-                                        </div>
-                                        <div class="menu-title">{{ __('Dispatch List') }}</div>
-                                    </a>
-                                </li>-->
+                                            <a href="{{ route('dispatch.index') }}">
+                                                <div class="parent-icon"><i class="bx bx-package"></i>
+                                                </div>
+                                                <div class="menu-title">{{ __('Dispatch List') }}</div>
+                                            </a>
+                                        </li>-->
             @endcan
         @endcanany
 

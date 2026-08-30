@@ -14,7 +14,9 @@ $(function () {
      * Initialize DataTable with server-side processing
      */
     function initializeDataTable() {
-        var exportColumns = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11];
+        var exportColumns = urlstatus === 'inprogress'
+            ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+            : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
         
             
         
@@ -395,7 +397,7 @@ this.api().columns([11]).every(function() {
         select.val(initialStatus);
     }
     
-    var statuses = ['Pending', 'Packing Pending','Assigning Pending', 'Completed','Partial','Progress','Cancelled'];
+    var statuses = ['Pending', 'Packing Pending','Assigning Pending', 'Completed','Partial','Progress','In Progress','Cancelled'];
     statuses.forEach(function(status) {
         select.append('<option value="'+status+'">'+status+'</option>');
     });
@@ -425,7 +427,7 @@ table.columns.adjust().draw();
     }
 
     function getColumnDefinitions() {
-        return [
+        const columns = [
             {
                 data: 'id',
                 name: 'id',
@@ -532,6 +534,17 @@ table.columns.adjust().draw();
                 searchable: false 
             }
         ];
+
+        if (urlstatus === 'inprogress') {
+            columns.splice(columns.length - 1, 0, {
+                data: 'current_machine',
+                name: 'current_machine',
+                orderable: false,
+                searchable: false
+            });
+        }
+
+        return columns;
     }
 
    
@@ -565,13 +578,15 @@ table.columns.adjust().draw();
                     9: 'Due Date',
                     10: 'Ageing (Days)',
                     11: 'Status',
-                    12: '',
+                    12: urlstatus === 'inprogress' ? 'Current Machine' : '',
+                    13: '',
                 };
 
                 return customHeaders[column] || headerText;
             },
             body: function (data, row, column, node) {
-                if (column === 12) {
+                if ((urlstatus === 'inprogress' && column === 13) ||
+                    (urlstatus !== 'inprogress' && column === 12)) {
                     data = '';
                 }
                 var cmd = String(data).replace(/<.*?>/ig, "");

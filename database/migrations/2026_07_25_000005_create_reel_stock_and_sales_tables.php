@@ -56,7 +56,7 @@ return new class extends Migration
         Schema::create('reel_stock_movements', function (Blueprint $table) {
             $table->id();
             $table->foreignId('reel_stock_id')->constrained('reel_stocks')->cascadeOnDelete();
-            $table->enum('transaction_type', ['opening', 'sale', 'adjustment', 'transfer_in', 'transfer_out', 'return', 'consumption']);
+            $table->enum('transaction_type', ['opening', 'sale', 'adjustment', 'transfer_in', 'transfer_out', 'return', 'consumption', 'production_wastage']);
             $table->decimal('length', 12, 3);
             $table->decimal('balance_before', 12, 3);
             $table->decimal('balance_after', 12, 3);

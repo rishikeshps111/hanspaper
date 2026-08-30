@@ -393,13 +393,19 @@
 
             //Serial #1
             // loadTrackingDataFromAjax(recordObject, currentRowId, loadedFromUpdateOperation);
-            loadBrandsForRow(currentRowId);
-            loadCategoryForRow(currentRowId);
+            loadBrandsForRow(
+                currentRowId,
+                recordObject.item_brand_id || recordObject.brand_id || ''
+            );
+            loadCategoryForRow(
+                currentRowId,
+                recordObject.item_category_id || recordObject.category_id || ''
+            );
             //Serial #2
             afterAddRowFunctionality(currentRowId);
     }
     
-   function loadBrandsForRow(rowId) {
+   function loadBrandsForRow(rowId, selectedBrandId) {
         $.ajax({
             url: baseURL + '/item/brand/getBrands',
             method: 'GET', // Changed from POST to GET
@@ -422,10 +428,7 @@
                     }));
                 });
                 
-                // If you need to set a selected brand from recordObject
-                if (typeof recordObject !== 'undefined' && recordObject.brand_id) {
-                    select.val(recordObject.brand_id);
-                }
+                select.val(selectedBrandId || '').trigger('change');
             },
             error: function(xhr, status, error) {
                 console.error('Error loading brands:', error);
@@ -434,7 +437,7 @@
         });
     }
     
-  function loadCategoryForRow(rowId) {
+  function loadCategoryForRow(rowId, selectedCategoryId) {
         $.ajax({
             url: baseURL + '/item/category/getCategories',
             method: 'GET',
@@ -457,14 +460,11 @@
                     }));
                 });
                 
-                // If you need to set a selected brand from recordObject
-                if (typeof recordObject !== 'undefined' && recordObject.brand_id) {
-                    select.val(recordObject.brand_id);
-                }
+                select.val(selectedCategoryId || '').trigger('change');
             },
             error: function(xhr, status, error) {
                 console.error('Error loading category:', error);
-                $('#brand-select-'+rowId).html('<option value="">Error loading category</option>');
+                $('#category-select-'+rowId).html('<option value="">Error loading category</option>');
             }
         });
     }

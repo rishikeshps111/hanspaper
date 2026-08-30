@@ -118,11 +118,10 @@
                                         <div class="input-group">
                                             <span class="input-group-text" id="basic-addon1"><i
                                                     class="fadeIn animated bx bx-barcode-reader text-primary"></i></span>
-                                            <input type="text" id="search_item" value="" class="form-control"
-                                                required placeholder="Scan Barcode/Search Items">
+                                            <input type="text" id="search_item" value="" class="form-control" required
+                                                placeholder="Scan Barcode/Search Items">
                                             <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal"
-                                                data-bs-target="#itemModal"><i
-                                                    class="bx bx-plus-circle me-0"></i></button>
+                                                data-bs-target="#itemModal"><i class="bx bx-plus-circle me-0"></i></button>
                                         </div>
                                     </div>
                                     <div class="col-md-12 col-sm-12 col-lg-2 d-none">
@@ -138,7 +137,10 @@
                                                     <th scope="col">{{ __('item.item') }}</th>
                                                     <th scope="col">{{ __('CS Stock') }}</th>
                                                     <th scope="col">{{ __('Ava Stock') }}</th>
-                                                    <th scope="col">{{ __('app.qty') }}</th>
+                                                    <th scope="col"
+                                                        style="width: 200px; min-width: 200px !important; max-width: 200px !important;">
+                                                        {{ __('app.qty') }}
+                                                    </th>
                                                     <th scope="col">{{ __('Brand') }}</th>
                                                     <th scope="col">{{ __('Category') }}</th>
                                                     <th scope="col">{{ __('Status') }}</th>
@@ -149,8 +151,7 @@
                                             </thead>
                                             <tbody>
                                                 <tr>
-                                                    <td colspan="11"
-                                                        class="text-center fw-light fst-italic default-row">
+                                                    <td colspan="11" class="text-center fw-light fst-italic default-row">
                                                         No items are added yet!!
                                                     </td>
                                                 </tr>

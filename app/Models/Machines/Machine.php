@@ -3,6 +3,7 @@ namespace App\Models\Machines;
 use App\Models\ProductionList;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Items\ProductionItemMaster;
+use App\Models\ProductionRun;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -29,6 +30,9 @@ class Machine extends Model
     {
         return $this->hasMany(ProductionItemMaster::class, 'assigned_machine_id');
     }
+
+    public function productionRuns(): HasMany { return $this->hasMany(ProductionRun::class); }
+    public function activeProductionRun(): HasOne { return $this->hasOne(ProductionRun::class)->where('status', 'in_progress'); }
 
 
 }
