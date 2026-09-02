@@ -265,13 +265,13 @@ class ProductionItemMasterController extends Controller
     {
         $term = trim((string) $request->input('q', ''));
         $cores = Core::query()->where('is_active', true)
-            ->when($term !== '', fn ($query) => $query->where(fn ($q) => $q->where('code', 'like', "%{$term}%")->orWhere('size_mm', 'like', "%{$term}%")))
+            ->when($term !== '', fn ($query) => $query->where(fn ($q) => $q->where('code', 'like', "%{$term}%")->orWhere('name', 'like', "%{$term}%")))
             ->withSum(['productionRuns as reserved_quantity' => fn ($query) => $query->where('status', 'in_progress')], 'core_quantity')
             ->orderBy('code')->limit(30)->get()
             ->map(fn (Core $core) => [
                 'id' => $core->id,
-                'text' => "{$core->code} | {$core->size_mm} mm | Available: " . max(0, $core->quantity - (int) $core->reserved_quantity),
-                'code' => $core->code, 'size_mm' => (float) $core->size_mm,
+                'text' => "{$core->code} | {$core->name} | Available: " . max(0, $core->quantity - (int) $core->reserved_quantity),
+                'code' => $core->code, 'name' => $core->name,
                 'available_quantity' => max(0, $core->quantity - (int) $core->reserved_quantity),
             ])->filter(fn ($core) => $core['available_quantity'] > 0)->values();
         return response()->json(['results' => $cores]);

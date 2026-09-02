@@ -26,11 +26,10 @@ class CoreController extends Controller
             ->orderByDesc('created_at');
 
         return DataTables::eloquent($query)
-            ->editColumn('size_mm', fn (Core $core) => (float) $core->size_mm)
             ->addColumn('available_quantity', fn (Core $core) => max(0, $core->quantity - (int) $core->reserved_quantity))
             ->editColumn('is_active', fn (Core $core) => $core->is_active ? 1 : 0)
             ->addColumn('action', fn (Core $core) =>
-                '<button class="btn btn-sm btn-outline-primary edit-core" data-id="' . $core->id . '" data-code="' . e($core->code) . '" data-size="' . e($core->size_mm) . '" data-active="' . (int) $core->is_active . '" title="Edit"><i class="bx bx-edit"></i></button> ' .
+                '<button class="btn btn-sm btn-outline-primary edit-core" data-id="' . $core->id . '" data-code="' . e($core->code) . '" data-name="' . e($core->name) . '" data-active="' . (int) $core->is_active . '" title="Edit"><i class="bx bx-edit"></i></button> ' .
                 '<button class="btn btn-sm btn-outline-success adjust-core" data-id="' . $core->id . '" title="Adjust Quantity"><i class="bx bx-plus-circle"></i></button> ' .
                 '<button class="btn btn-sm btn-outline-dark core-history" data-id="' . $core->id . '" data-code="' . e($core->code) . '" title="Transaction History"><i class="bx bx-history"></i></button>')
             ->rawColumns(['action'])
@@ -57,7 +56,7 @@ class CoreController extends Controller
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'size_mm' => ['required', 'numeric', 'gt:0', 'max:99999999.99'],
+            'name' => ['required', 'string', 'max:255'],
             'quantity' => ['required', 'integer', 'min:0'],
             'is_active' => ['required', 'boolean'],
         ]);
@@ -75,7 +74,7 @@ class CoreController extends Controller
     public function update(Request $request, Core $core): JsonResponse
     {
         $data = $request->validate([
-            'size_mm' => ['required', 'numeric', 'gt:0', 'max:99999999.99'],
+            'name' => ['required', 'string', 'max:255'],
             'is_active' => ['required', 'boolean'],
         ]);
         $core->update($data + ['updated_by' => auth()->id()]);

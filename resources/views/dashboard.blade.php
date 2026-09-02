@@ -346,7 +346,8 @@
 										<td class="text-center">
 											<div
 												class="badge rounded-pill text-{{ $class }} bg-light-{{ $class }} p-2 text-uppercase px-3">
-												{{ $message }}</div>
+												{{ $message }}
+											</div>
 										</td>
 									</tr>
 
@@ -442,8 +443,10 @@
 								<td>{{ $production->activeRun?->machine?->machine_name ?? 'Not Available' }}</td>
 								<td>{{ $production->activeRun?->productionUser?->full_name ?? 'Not Available' }}</td>
 								<td>
-									<span class="badge bg-info text-dark">{{ $production->activeRun?->reelStock?->reel?->code ?? 'Not Available' }}</span>
-									<small class="d-block text-muted mt-1">{{ $production->activeRun?->reelStock?->stock_code ?? 'Not Available' }}</small>
+									<span
+										class="badge bg-info text-dark">{{ $production->activeRun?->reelStock?->reel?->code ?? 'Not Available' }}</span>
+									<small
+										class="d-block text-muted mt-1">{{ $production->activeRun?->reelStock?->stock_code ?? 'Not Available' }}</small>
 								</td>
 								<td class="text-center"><button type="button"
 										class="btn btn-sm btn-outline-primary view-in-progress-production"
@@ -599,13 +602,13 @@
 						detail('Physical Reel Used', data.stock_code) + detail('Reel Code', data.reel_code) +
 						detail('Machine', data.machine) +
 						detail('Production User', data.production_user) +
-						detail('Core', data.core_code + (data.core_size === null ? '' : ' | ' + formatDashboardQuantity(data.core_size) + ' mm')) +
+						detail('Core', data.core_code + (data.core_name ? ' | ' + escapeDashboardText(data.core_name) : '')) +
 						detail('Core Quantity', formatDashboardQuantity(data.core_quantity)) + detail('Output Roll Width', formatDashboardQuantity(data.output_roll_width) + ' mm') +
 						detail('Roll Length', formatDashboardQuantity(data.roll_length) + ' m') + detail('Started At', data.started_at) +
 						'</div></div></div>' +
 						'<div class="card border mt-4"><div class="card-header bg-light d-flex justify-content-between align-items-center"><span class="fw-semibold">Completed Production Details</span></div><div class="table-responsive"><table class="table table-bordered align-middle mb-0"><thead><tr><th>Completed Quantity</th><th>Physical Reel Used</th><th>Reel Code</th><th>Machine</th><th>Production User</th><th>Core</th><th>Core Qty</th><th>Output Width</th><th>Roll Length</th><th>Completed At</th></tr></thead><tbody>' +
 						(data.completed_runs.length ? data.completed_runs.map(function (run) {
-							return '<tr><td><span class="badge bg-success">' + formatDashboardQuantity(run.quantity) + '</span></td><td>' + escapeDashboardText(run.stock_code) + '</td><td>' + escapeDashboardText(run.reel_code) + '</td><td>' + escapeDashboardText(run.machine) + '</td><td>' + escapeDashboardText(run.production_user) + '</td><td>' + escapeDashboardText(run.core_code + (run.core_size === null ? '' : ' | ' + formatDashboardQuantity(run.core_size) + ' mm')) + '</td><td>' + formatDashboardQuantity(run.core_quantity) + '</td><td>' + (run.output_roll_width === null ? 'Not Available' : formatDashboardQuantity(run.output_roll_width) + ' mm') + '</td><td>' + (run.roll_length === null ? 'Not Available' : formatDashboardQuantity(run.roll_length) + ' m') + '</td><td>' + escapeDashboardText(run.completed_at) + '</td></tr>';
+							return '<tr><td><span class="badge bg-success">' + formatDashboardQuantity(run.quantity) + '</span></td><td>' + escapeDashboardText(run.stock_code) + '</td><td>' + escapeDashboardText(run.reel_code) + '</td><td>' + escapeDashboardText(run.machine) + '</td><td>' + escapeDashboardText(run.production_user) + '</td><td>' + escapeDashboardText(run.core_code + (run.core_name ? ' | ' + run.core_name : '')) + '</td><td>' + formatDashboardQuantity(run.core_quantity) + '</td><td>' + (run.output_roll_width === null ? 'Not Available' : formatDashboardQuantity(run.output_roll_width) + ' mm') + '</td><td>' + (run.roll_length === null ? 'Not Available' : formatDashboardQuantity(run.roll_length) + ' m') + '</td><td>' + escapeDashboardText(run.completed_at) + '</td></tr>';
 						}).join('') : '<tr><td colspan="10" class="text-center text-muted py-3">No completed production entries.</td></tr>') +
 						'</tbody></table></div></div>';
 					$('#inProgressProductionBody').html(html);

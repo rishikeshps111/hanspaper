@@ -491,7 +491,7 @@
 
 
 
-        {{--
+
         <li class="{{ request()->is('barcode-work-orders*') ? 'mm-active' : '' }}">
             <a href="javascript:;" class="has-arrow">
                 <div class="parent-icon"><i class="bx bx-barcode"></i></div>
@@ -509,7 +509,7 @@
                     </a>
                 </li>
             </ul>
-        </li> --}}
+        </li>
 
         @canany(['dispatch.index'])
             @can('dispatch.index')

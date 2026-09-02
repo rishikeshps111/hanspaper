@@ -218,7 +218,7 @@
                                                                         <div class="col-md-3"><small class="d-block">Reel Code</small><strong>{{ $activeRun->reelStock->reel?->code }}</strong></div>
                                                                         <div class="col-md-2"><small class="d-block">Machine</small><strong>{{ $activeRun->machine?->machine_name }}</strong></div>
                                                                         <div class="col-md-2"><small class="d-block">Produced By</small><strong>{{ $activeRun->productionUser?->full_name }}</strong></div>
-                                                                        <div class="col-md-2"><small class="d-block">Core</small><strong>{{ $activeRun->core?->code }} ({{ $activeRun->core?->size_mm }} mm)</strong></div>
+                                                                        <div class="col-md-2"><small class="d-block">Core</small><strong>{{ $activeRun->core?->code }} ({{ $activeRun->core?->name }})</strong></div>
                                                                         <div class="col-md-1"><small class="d-block">Width</small><strong>{{ number_format($activeRun->output_roll_width, 2) }} mm</strong></div>
                                                                         <div class="col-md-1"><small class="d-block">Roll Length</small><strong>{{ number_format($activeRun->roll_length, 2) }} m</strong></div>
                                                                     </div>
@@ -285,8 +285,8 @@
                                                                 @if ($activeRun?->core)
                                                                     <option value="{{ $activeRun->core_id }}" selected
                                                                         data-available="{{ $activeRun->core->quantity }}"
-                                                                        data-size="{{ $activeRun->core->size_mm }}">
-                                                                        {{ $activeRun->core->code }} | {{ $activeRun->core->size_mm }} mm
+                                                                        data-name="{{ $activeRun->core->name }}">
+                                                                        {{ $activeRun->core->code }} | {{ $activeRun->core->name }}
                                                                     </option>
                                                                 @else
                                                                     <option value=""></option>
@@ -592,11 +592,11 @@
             };
             initPackingMaterial('#packing_box_id','box'); initPackingMaterial('#packing_cover_id','cover');
             const updatePackingMaterialSummary=function(){
-                const qty=parseInt($('#packed_qty').val())||0,box=$('#packing_box_id').select2('data')[0]||{},cover=$('#packing_cover_id').select2('data')[0]||{};
-                if(box.id){const suggested=Math.ceil(qty/(parseInt(box.capacity)||1));if(!$('#packing_box_quantity').is(':focus'))$('#packing_box_quantity').val(suggested||'');$('#boxStockSummary').text(`Available: ${box.available_quantity} | Suggested: ${suggested}`);}
-                if(cover.id){const suggested=Math.ceil(qty/(parseInt(cover.capacity)||1));if(!$('#packing_cover_quantity').is(':focus'))$('#packing_cover_quantity').val(suggested||'');$('#coverStockSummary').text(`Available: ${cover.available_quantity} | Suggested: ${suggested}`);}
+                const box=$('#packing_box_id').select2('data')[0]||{},cover=$('#packing_cover_id').select2('data')[0]||{};
+                $('#boxStockSummary').text(box.id ? `Available: ${box.available_quantity}` : 'Select a packing box.');
+                $('#coverStockSummary').text(cover.id ? `Available: ${cover.available_quantity}` : 'Select a packing cover.');
             };
-            $('#packed_qty,#packing_box_id,#packing_cover_id').on('input change',updatePackingMaterialSummary);
+            $('#packing_box_id,#packing_cover_id').on('change',updatePackingMaterialSummary);
 
             const formatReelStockOption = function (option) {
                 if (!option.id) return option.text;
