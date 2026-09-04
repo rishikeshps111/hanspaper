@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\ProductionRun;
+use Illuminate\Database\Eloquent\Builder;
 
 class ReelStock extends Model
 {
@@ -34,6 +35,7 @@ class ReelStock extends Model
 
     protected static function booted(): void
     {
+        static::addGlobalScope('not_voided', fn (Builder $query) => $query->where('reel_stocks.status', '!=', 'voided'));
         static::creating(function ($model) {
             $model->created_by = auth()->id();
             $model->updated_by = auth()->id();

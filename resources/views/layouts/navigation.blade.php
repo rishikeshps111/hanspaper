@@ -316,6 +316,11 @@
                         <i class="bx bx-radio-circle"></i>{{ __('Reel Settings') }}
                     </a>
                 </li>
+                <li class="{{ request()->routeIs('reels.corrections.*') ? 'mm-active' : '' }}">
+                    <a href="{{ route('reels.corrections.index') }}">
+                        <i class="bx bx-radio-circle"></i>{{ __('Reel Stock Correction') }}
+                    </a>
+                </li>
                 {{-- <li class="{{ request()->routeIs('reels.manage.*', 'reels.stock.usage') ? 'mm-active' : '' }}">
                     <a href="{{ route('reels.manage.index') }}">
                         <i class="bx bx-radio-circle"></i>{{ __('Manage Reels') }}
@@ -492,7 +497,7 @@
 
 
 
-        <li class="{{ request()->is('barcode-work-orders*') ? 'mm-active' : '' }}">
+        {{-- <li class="{{ request()->is('barcode-work-orders*') ? 'mm-active' : '' }}">
             <a href="javascript:;" class="has-arrow">
                 <div class="parent-icon"><i class="bx bx-barcode"></i></div>
                 <div class="menu-title">Barcode WorkOrder</div>
@@ -509,7 +514,7 @@
                     </a>
                 </li>
             </ul>
-        </li>
+        </li> --}}
 
         @canany(['dispatch.index'])
             @can('dispatch.index')

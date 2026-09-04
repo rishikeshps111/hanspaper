@@ -665,19 +665,25 @@
                 const sourceWidth = parseFloat(stock.width ?? option.data('width')) || 0;
                 const balance = parseFloat(stock.balance ?? option.data('balance')) || 0;
                 const existingCutWidth = parseFloat(stock.cut_width ?? option.data('cut-width')) || 0;
+                const stockStatus = String(stock.status ?? option.data('status') ?? '').toLowerCase();
                 const rollLength = parseFloat($('#roll_length').val()) || 0;
                 const quantity = parseFloat($('#production_qty').val()) || 0;
                 const outputWidth = parseFloat($('#output_roll_width').val()) || 0;
                 const rollCount = outputWidth > 0 ? Math.floor(sourceWidth / outputWidth) : 0;
-                const totalLength = existingCutWidth > 0 ? balance : balance * rollCount;
+                const previousWidthSplits = existingCutWidth > 0
+                    ? Math.max(1, Math.floor(sourceWidth / existingCutWidth))
+                    : 1;
+                const physicalAvailableLength = stockStatus === 'bit' && existingCutWidth > 0
+                    ? balance / previousWidthSplits
+                    : balance;
+                const totalLength = physicalAvailableLength * rollCount;
                 const usage = quantity * rollLength;
                 const waste = rollCount > 0 ? sourceWidth - (outputWidth * rollCount) : 0;
                 const remaining = Math.max(0, totalLength - usage);
                 const physicalRemaining = rollCount > 0 ? remaining / rollCount : 0;
                 const possibleRolls = rollLength > 0 ? Math.floor(totalLength / rollLength) : 0;
-                const sameCutWidth = existingCutWidth === 0 || Math.abs(existingCutWidth - outputWidth) < 0.0001;
                 const valid = sourceWidth > 0 && rollLength > 0 && quantity > 0 && usage <= totalLength &&
-                    outputWidth > 0 && outputWidth <= sourceWidth && rollCount > 0 && sameCutWidth;
+                    outputWidth > 0 && outputWidth <= sourceWidth && rollCount > 0;
                 const calculatedStatus = remaining <= 0 ? 'finished' : 'bit';
                 const statusSelect = $('#reel_status_after_usage');
 
@@ -697,7 +703,7 @@
                 $('#reel_status_selection_type').val(reelStatusManuallySelected ? 'manual' : 'automatic');
 
                 $('#previewSourceWidth').text(sourceWidth ? sourceWidth.toFixed(2) + ' mm' : '—');
-                $('#previewBalance').text(balance ? balance.toFixed(2) + ' m' : '—');
+                $('#previewBalance').text(physicalAvailableLength ? physicalAvailableLength.toFixed(2) + ' m' : '—');
                 $('#previewRollCount').text(rollCount);
                 $('#previewTotalLength').text(totalLength.toFixed(2) + ' m');
                 $('#previewUsage').text(usage.toFixed(2) + ' m');
@@ -721,11 +727,7 @@
                     calculateReelCut();
                     return;
                 }
-                if (cutWidth > 0) {
-                    widthInput.val(cutWidth.toFixed(3)).prop('readonly', true);
-                } else {
-                    widthInput.val('').prop('readonly', false);
-                }
+                widthInput.val('').prop('readonly', false);
                 calculateReelCut();
             };
 

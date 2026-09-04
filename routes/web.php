@@ -43,6 +43,7 @@ use App\Http\Controllers\ReelController;
 use App\Http\Controllers\ReelStockController;
 use App\Http\Controllers\ReelSaleController;
 use App\Http\Controllers\ReelDashboardController;
+use App\Http\Controllers\ReelStockCorrectionController;
 use App\Http\Controllers\BarcodeWorkOrderController;
 use App\Http\Controllers\CoreController;
 use App\Http\Controllers\PackingMaterialController;
@@ -1917,6 +1918,15 @@ Route::middleware('auth')->group(function () {
                 Route::post('/settings/{type}', [ReelSettingsController::class, 'store'])->name('settings.store');
                 Route::put('/settings/{type}/{id}', [ReelSettingsController::class, 'update'])->name('settings.update');
                 Route::delete('/settings/{type}/{id}', [ReelSettingsController::class, 'destroy'])->name('settings.destroy');
+
+                Route::get('/corrections', [ReelStockCorrectionController::class, 'index'])->name('corrections.index');
+                Route::get('/corrections/stock-batches', [ReelStockCorrectionController::class, 'stockBatches'])->name('corrections.stock-batches');
+                Route::post('/corrections/stock', [ReelStockCorrectionController::class, 'correctStock'])->name('corrections.stock');
+                Route::get('/corrections/reels', [ReelStockCorrectionController::class, 'reels'])->name('corrections.reels');
+                Route::get('/corrections/reels/{reel}', [ReelStockCorrectionController::class, 'reel'])->name('corrections.reel');
+                Route::put('/corrections/reels/{reel}', [ReelStockCorrectionController::class, 'updateReel'])->name('corrections.reel.update');
+                Route::get('/corrections/history', [ReelStockCorrectionController::class, 'history'])->name('corrections.history');
+                Route::get('/corrections/reel-history', [ReelStockCorrectionController::class, 'reelHistory'])->name('corrections.reel-history');
 
                 Route::get('/manage', [ReelController::class, 'index'])->name('manage.index');
                 Route::get('/manage/data', [ReelController::class, 'data'])->name('manage.data');

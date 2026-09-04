@@ -914,10 +914,6 @@ class ProductionItemMasterController extends Controller
                 if ($outputWidth > $sourceWidth || floor($sourceWidth / $outputWidth) < 1) {
                     throw ValidationException::withMessages(['output_roll_width' => "Output roll width must fit within the source width of {$sourceWidth} mm."]);
                 }
-                if ($stock->cut_width !== null && abs((float) $stock->cut_width - $outputWidth) > 0.0001) {
-                    throw ValidationException::withMessages(['output_roll_width' => "This Bit reel was already slit to {$stock->cut_width} mm."]);
-                }
-
                 if (!$core->is_active || $core->quantity < 1) {
                     throw ValidationException::withMessages(['core_id' => 'The selected core has no available quantity.']);
                 }
@@ -999,15 +995,14 @@ class ProductionItemMasterController extends Controller
                 $excessStockQuantity = max(0, $productionQuantity - $orderQuantity);
                 $newTotal = $totalProducedQty + $orderQuantity;
 
-                if ($stock->cut_width !== null && abs((float) $stock->cut_width - $outputWidth) > 0.0001) {
-                    throw ValidationException::withMessages([
-                        'output_roll_width' => "This Bit reel was already slit to {$stock->cut_width} mm. Continue using the same width.",
-                    ]);
-                }
-
-                $balanceBefore = $stock->cut_width === null
-                    ? round((float) $stock->balance_length * $rollCount, 3)
+                $previousCutWidth = round((float) ($stock->cut_width ?? 0), 3);
+                $previousWidthSplits = $previousCutWidth > 0
+                    ? max(1, (int) floor($sourceWidth / $previousCutWidth))
+                    : 1;
+                $physicalAvailableLength = $stock->status === 'bit' && $previousCutWidth > 0
+                    ? round((float) $stock->balance_length / $previousWidthSplits, 3)
                     : round((float) $stock->balance_length, 3);
+                $balanceBefore = round($physicalAvailableLength * $rollCount, 3);
                 $consumedLength = round($productionQuantity * $rollLength, 3);
                 if ($consumedLength > $balanceBefore) {
                     $possibleQuantity = (int) floor($balanceBefore / $rollLength);
