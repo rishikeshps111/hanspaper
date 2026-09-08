@@ -129,23 +129,58 @@
 
     <div class="modal fade" id="stockCorrectionModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
-            <form id="stockCorrectionForm" class="modal-content">
-                @csrf<input type="hidden" name="stock_batch_uuid"><input type="hidden" name="reel_id"><input
-                    type="hidden" name="reel_provider_id"><input type="hidden" name="reel_warehouse_id">
+            <form id="stockCorrectionForm" class="modal-content position-relative">
+                @csrf
+                <input type="hidden" name="stock_batch_uuid">
+                <input type="hidden" name="original_reel_id">
+                <input type="hidden" name="original_reel_provider_id">
+                <input type="hidden" name="original_reel_warehouse_id">
+                <div class="correction-loading d-none position-absolute top-0 start-0 w-100 h-100 align-items-center justify-content-center bg-white bg-opacity-75"
+                    style="z-index:1060;border-radius:inherit">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <div class="fw-semibold mt-2">Applying correction...</div><small class="text-muted">Please wait
+                            until the correction is complete.</small>
+                    </div>
+                </div>
                 <div class="modal-header">
                     <h5 class="modal-title">Correct Stock Quantity</h5><button type="button" class="btn-close"
                         data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div class="alert alert-light border" id="stockCorrectionSummary"></div>
-                    <div class="mb-3"><label class="form-label">Corrected Quantity <span
-                                class="text-danger">*</span></label><input type="number" min="0" max="10000"
-                            name="corrected_quantity" class="form-control" required>
-                        <div class="invalid-feedback" data-error="corrected_quantity"></div>
-                    </div>
-                    <div><label class="form-label">Correction Reason <span class="text-danger">*</span></label>
-                        <textarea name="reason" rows="3" maxlength="2000" class="form-control" required></textarea>
-                        <div class="invalid-feedback" data-error="reason"></div>
+                    <div class="row g-3">
+                        <div class="col-12"><label class="form-label">Reel <span class="text-danger">*</span></label>
+                            <select name="reel_id" class="form-select stock-correction-select" required>
+                                @foreach($reels as $reel)
+                                <option value="{{ $reel->id }}">{{ $reel->code }}</option>@endforeach
+                            </select>
+                            <div class="invalid-feedback" data-error="reel_id"></div>
+                        </div>
+                        <div class="col-md-6"><label class="form-label">Provider <span class="text-danger">*</span></label>
+                            <select name="reel_provider_id" class="form-select stock-correction-select" required>
+                                @foreach($providers as $provider)
+                                <option value="{{ $provider->id }}">{{ $provider->name }}</option>@endforeach
+                            </select>
+                            <div class="invalid-feedback" data-error="reel_provider_id"></div>
+                        </div>
+                        <div class="col-md-6"><label class="form-label">Warehouse <span class="text-danger">*</span></label>
+                            <select name="reel_warehouse_id" class="form-select stock-correction-select" required>
+                                @foreach($warehouses as $warehouse)
+                                <option value="{{ $warehouse->id }}">{{ $warehouse->name }}</option>@endforeach
+                            </select>
+                            <div class="invalid-feedback" data-error="reel_warehouse_id"></div>
+                        </div>
+                        <div class="col-12"><label class="form-label">Corrected Quantity <span
+                                    class="text-danger">*</span></label><input type="number" min="0" max="10000"
+                                name="corrected_quantity" class="form-control" required>
+                            <div class="invalid-feedback" data-error="corrected_quantity"></div>
+                        </div>
+                        <div class="col-12"><label class="form-label">Correction Reason <span
+                                    class="text-danger">*</span></label>
+                            <textarea name="reason" rows="3" maxlength="2000" class="form-control" required></textarea>
+                            <div class="invalid-feedback" data-error="reason"></div>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer"><button type="button" class="btn btn-light"
@@ -157,8 +192,16 @@
 
     <div class="modal fade" id="reelCorrectionModal" tabindex="-1">
         <div class="modal-dialog modal-lg modal-dialog-centered">
-            <form id="reelCorrectionForm" class="modal-content">
+            <form id="reelCorrectionForm" class="modal-content position-relative">
                 @csrf<input type="hidden" id="correctionReelId">
+                <div class="correction-loading d-none position-absolute top-0 start-0 w-100 h-100 align-items-center justify-content-center bg-white bg-opacity-75"
+                    style="z-index:1060;border-radius:inherit">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <div class="fw-semibold mt-2">Applying correction...</div><small class="text-muted">Please wait
+                            until the correction is complete.</small>
+                    </div>
+                </div>
                 <div class="modal-header">
                     <h5 class="modal-title">Correct Reel Details</h5><button type="button" class="btn-close"
                         data-bs-dismiss="modal"></button>
@@ -193,18 +236,18 @@
                             <div class="invalid-feedback" data-error="reel_gsm_id"></div>
                         </div>
                         <div class="col-md-3"><label class="form-label">Width (mm) <span
-                                    class="text-danger">*</span></label><input type="number" step="0.01"
-                                name="width" class="form-control" required>
+                                    class="text-danger">*</span></label><input type="number" step="0.01" name="width"
+                                class="form-control" required>
                             <div class="invalid-feedback" data-error="width"></div>
                         </div>
                         <div class="col-md-3"><label class="form-label">Length (m) <span
-                                    class="text-danger">*</span></label><input type="number" step="0.01"
-                                name="length" class="form-control" required>
+                                    class="text-danger">*</span></label><input type="number" step="0.01" name="length"
+                                class="form-control" required>
                             <div class="invalid-feedback" data-error="length"></div>
                         </div>
                         <div class="col-md-3"><label class="form-label">Unit Price <span
-                                    class="text-danger">*</span></label><input type="number" step="0.01"
-                                name="unit_price" class="form-control" required>
+                                    class="text-danger">*</span></label><input type="number" step="0.01" name="unit_price"
+                                class="form-control" required>
                             <div class="invalid-feedback" data-error="unit_price"></div>
                         </div>
                         <div class="col-md-3"><label class="form-label">Selling Price <span
@@ -217,8 +260,8 @@
                                 <option value="1">Active</option>
                                 <option value="0">Inactive</option>
                             </select></div>
-                        <div class="col-md-8"><label class="form-label">Remarks</label><input type="text"
-                                maxlength="5000" name="remarks" class="form-control"></div>
+                        <div class="col-md-8"><label class="form-label">Remarks</label><input type="text" maxlength="5000"
+                                name="remarks" class="form-control"></div>
                         <div class="col-12"><label class="form-label">Correction Reason <span
                                     class="text-danger">*</span></label>
                             <textarea name="reason" rows="2" maxlength="2000" class="form-control" required></textarea>
@@ -238,7 +281,7 @@
     <script src="{{ versionedAsset('assets/plugins/datatable/js/jquery.dataTables.min.js') }}"></script>
     <script src="{{ versionedAsset('assets/plugins/datatable/js/dataTables.bootstrap5.min.js') }}"></script>
     <script>
-        $(function() {
+        $(function () {
             const urls = {
                 batches: @json(route('reels.corrections.stock-batches', [], false)),
                 correct: @json(route('reels.corrections.stock', [], false)),
@@ -256,6 +299,11 @@
                 width: '100%',
                 dropdownParent: $('#reelCorrectionModal')
             });
+            $('#stockCorrectionModal .stock-correction-select').select2({
+                theme: 'bootstrap-5',
+                width: '100%',
+                dropdownParent: $('#stockCorrectionModal')
+            });
             const toast = m => window.iziToast ? iziToast.success({
                 title: 'Success',
                 message: m
@@ -270,6 +318,10 @@
                 });
                 if (!x.responseJSON?.errors) Swal.fire('Error', x.responseJSON?.message ||
                     'Unable to save correction.', 'error');
+            };
+            const setCorrectionLoading = (form, loading) => {
+                form.find('.correction-loading').toggleClass('d-none', !loading).toggleClass('d-flex', loading);
+                form.find('input,select,textarea,button').prop('disabled', loading);
             };
             const batchTable = $('#batchTable').DataTable({
                 processing: true,
@@ -320,32 +372,35 @@
                 $('#batchDate').val('');
                 batchTable.ajax.reload();
             });
-            $(document).on('click', '.correct-stock', function() {
+            $(document).on('click', '.correct-stock', function () {
                 const b = $(this),
                     row = batchTable.row(b.closest('tr')).data(),
                     f = $('#stockCorrectionForm');
                 f[0].reset();
                 f.find('.is-invalid').removeClass('is-invalid');
                 f.find('[name=stock_batch_uuid]').val(row.batch_uuid);
-                f.find('[name=reel_id]').val(row.reel_id);
-                f.find('[name=reel_provider_id]').val(row.reel_provider_id);
-                f.find('[name=reel_warehouse_id]').val(row.reel_warehouse_id);
+                f.find('[name=original_reel_id]').val(row.reel_id);
+                f.find('[name=original_reel_provider_id]').val(row.reel_provider_id);
+                f.find('[name=original_reel_warehouse_id]').val(row.reel_warehouse_id);
+                f.find('[name=reel_id]').val(row.reel_id).trigger('change.select2');
+                f.find('[name=reel_provider_id]').val(row.reel_provider_id).trigger('change.select2');
+                f.find('[name=reel_warehouse_id]').val(row.reel_warehouse_id).trigger('change.select2');
                 f.find('[name=corrected_quantity]').val(row.current_quantity);
                 $('#stockCorrectionSummary').html(
                     `<strong>${$('<div>').text(row.reel_code).html()}</strong><br>Current quantity: ${row.current_quantity} &nbsp;|&nbsp; Eligible to remove: ${row.eligible_quantity}`
-                    );
+                );
                 $('#stockCorrectionModal').modal('show');
             });
-            $('#stockCorrectionForm').submit(function(e) {
+            $('#stockCorrectionForm').submit(function (e) {
                 e.preventDefault();
-                const f = $(this),
-                    button = f.find('[type=submit]').prop('disabled', true);
-                $.post(urls.correct, f.serialize()).done(r => {
+                const f = $(this), payload = f.serialize();
+                setCorrectionLoading(f, true);
+                $.post(urls.correct, payload).done(r => {
                     $('#stockCorrectionModal').modal('hide');
                     toast(r.message);
                     batchTable.ajax.reload(null, false);
                     historyTable.ajax.reload(null, false);
-                }).fail(x => errors(f, x)).always(() => button.prop('disabled', false));
+                }).fail(x => errors(f, x)).always(() => setCorrectionLoading(f, false));
             });
             const reelTable = $('#reelTable').DataTable({
                 processing: true,
@@ -385,7 +440,7 @@
                     orderable: false
                 }]
             });
-            $(document).on('click', '.edit-reel', function() {
+            $(document).on('click', '.edit-reel', function () {
                 const id = $(this).data('id'),
                     f = $('#reelCorrectionForm');
                 f[0].reset();
@@ -403,21 +458,22 @@
                     $('#reelCorrectionModal').modal('show');
                 });
             });
-            $('#reelCorrectionForm').submit(function(e) {
+            $('#reelCorrectionForm').submit(function (e) {
                 e.preventDefault();
                 const f = $(this),
                     id = $('#correctionReelId').val(),
-                    button = f.find('[type=submit]').prop('disabled', true);
+                    payload = f.serialize();
+                setCorrectionLoading(f, true);
                 $.ajax({
                     url: urls.reel.replace('__ID__', id),
                     type: 'PUT',
-                    data: f.serialize()
+                    data: payload
                 }).done(r => {
                     $('#reelCorrectionModal').modal('hide');
                     toast(r.message);
                     reelTable.ajax.reload(null, false);
                     batchTable.ajax.reload(null, false);
-                }).fail(x => errors(f, x)).always(() => button.prop('disabled', false));
+                }).fail(x => errors(f, x)).always(() => setCorrectionLoading(f, false));
             });
             const historyTable = $('#historyTable').DataTable({
                 processing: true,

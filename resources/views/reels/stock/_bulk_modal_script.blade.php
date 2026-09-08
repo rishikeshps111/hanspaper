@@ -12,6 +12,18 @@
         $('#stockProviderId,#stockWarehouseId').select2({ theme: 'bootstrap-5', width: '100%', allowClear: true, dropdownParent: $('#addStockModal') });
         $('#quickReelBrand,#quickReelType,#quickReelGsm').select2({ theme: 'bootstrap-5', width: '100%', allowClear: true, dropdownParent: $('#quickReelModal') });
 
+        const setSubmitLoading = function (button, loading, loadingText) {
+            const element = $(button);
+            if (loading) {
+                if (!element.data('original-html')) element.data('original-html', element.html());
+                element.prop('disabled', true).html(
+                    `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>${loadingText}`
+                );
+                return;
+            }
+            element.prop('disabled', false).html(element.data('original-html') || element.text());
+        };
+
         window.openReelStockModal = function (reelId = '', reelCode = '') {
             $('#stockErrors').addClass('d-none').empty();
             if (reelId) {
@@ -28,7 +40,9 @@
         $('#quickReelModal').on('hidden.bs.modal', function () { if (!$('#addStockModal').hasClass('show')) stockModal.show(); });
 
         $('#quickReelForm').on('submit', function (event) {
-            event.preventDefault(); const form = this;
+            event.preventDefault(); const form = this, button = $('#saveQuickReelButton');
+            if (button.prop('disabled')) return;
+            setSubmitLoading(button, true, 'Saving Reel...');
             $.ajax({
                 url: @json(route('reels.manage.store', [], false)), type: 'POST', data: $(form).serialize(), headers: { Accept: 'application/json' },
                 success: response => {
@@ -39,12 +53,15 @@
                     iziToast.success({ title: 'Success', message: 'Reel added successfully.' });
                     $(document).trigger('reel:created', [reel]);
                 },
-                error: xhr => { const errors = xhr.responseJSON?.errors; const messages = errors ? Object.values(errors).flat() : [xhr.responseJSON?.message || 'Unable to add reel.']; $('#quickReelErrors').html(messages.map(message => `<div>${$('<div>').text(message).html()}</div>`).join('')).removeClass('d-none'); }
+                error: xhr => { const errors = xhr.responseJSON?.errors; const messages = errors ? Object.values(errors).flat() : [xhr.responseJSON?.message || 'Unable to add reel.']; $('#quickReelErrors').html(messages.map(message => `<div>${$('<div>').text(message).html()}</div>`).join('')).removeClass('d-none'); },
+                complete: () => setSubmitLoading(button, false)
             });
         });
 
         $('#addStockForm').on('submit', function (event) {
-            event.preventDefault(); const form = this;
+            event.preventDefault(); const form = this, button = $('#saveStockButton');
+            if (button.prop('disabled')) return;
+            setSubmitLoading(button, true, 'Adding Stock...');
             $.ajax({
                 url: @json(route('reels.stock.bulk-store', [], false)), type: 'POST', data: $(form).serialize(),
                 success: response => {
@@ -53,7 +70,8 @@
                     $(document).trigger('reel:stock-added');
                     iziToast.success({ title: 'Success', message: 'Reel stock added successfully.' });
                 },
-                error: xhr => { const errors = xhr.responseJSON?.errors; const messages = errors ? Object.values(errors).flat() : [xhr.responseJSON?.message || 'Unable to add stock.']; $('#stockErrors').html(messages.map(message => `<div>${$('<div>').text(message).html()}</div>`).join('')).removeClass('d-none'); }
+                error: xhr => { const errors = xhr.responseJSON?.errors; const messages = errors ? Object.values(errors).flat() : [xhr.responseJSON?.message || 'Unable to add stock.']; $('#stockErrors').html(messages.map(message => `<div>${$('<div>').text(message).html()}</div>`).join('')).removeClass('d-none'); },
+                complete: () => setSubmitLoading(button, false)
             });
         });
     });

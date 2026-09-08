@@ -57,8 +57,7 @@ class ReelStockCorrectionController extends Controller
         return DataTables::of($query)
             ->addColumn('original_quantity', function ($row) {
                 $addedByCorrections = ReelStockCorrection::where('stock_batch_uuid', $row->batch_uuid)
-                    ->where('reel_id', $row->reel_id)->where('reel_provider_id', $row->reel_provider_id)
-                    ->where('reel_warehouse_id', $row->reel_warehouse_id)->where('quantity_change', '>', 0)
+                    ->where('quantity_change', '>', 0)
                     ->sum('quantity_change');
                 return max(0, (int) $row->recorded_quantity - (int) $addedByCorrections);
             })
@@ -95,6 +94,9 @@ class ReelStockCorrectionController extends Controller
     {
         $data = $request->validate([
             'stock_batch_uuid' => ['required', 'uuid'],
+            'original_reel_id' => ['required', 'integer', 'exists:reels,id'],
+            'original_reel_provider_id' => ['required', 'integer', 'exists:reel_providers,id'],
+            'original_reel_warehouse_id' => ['required', 'integer', 'exists:reel_warehouses,id'],
             'reel_id' => ['required', 'integer', 'exists:reels,id'],
             'reel_provider_id' => ['required', 'integer', 'exists:reel_providers,id'],
             'reel_warehouse_id' => ['required', 'integer', 'exists:reel_warehouses,id'],
@@ -106,30 +108,68 @@ class ReelStockCorrectionController extends Controller
             $stockIds = DB::table('reel_stock_movements')->where('batch_uuid', $data['stock_batch_uuid'])
                 ->where('transaction_type', 'opening')->pluck('reel_stock_id')->unique();
             $stocks = ReelStock::withoutGlobalScope('not_voided')->whereIn('id', $stockIds)
-                ->where('reel_id', $data['reel_id'])->where('reel_provider_id', $data['reel_provider_id'])
-                ->where('reel_warehouse_id', $data['reel_warehouse_id'])->lockForUpdate()->get();
+                ->where('reel_id', $data['original_reel_id'])
+                ->where('reel_provider_id', $data['original_reel_provider_id'])
+                ->where('reel_warehouse_id', $data['original_reel_warehouse_id'])
+                ->lockForUpdate()->get();
             if ($stocks->isEmpty()) {
                 throw ValidationException::withMessages(['stock_batch_uuid' => 'The selected stock-addition batch was not found.']);
             }
 
             $previous = $stocks->where('status', '!=', 'voided')->count();
             $change = $data['corrected_quantity'] - $previous;
-            if ($change === 0) {
-                throw ValidationException::withMessages(['corrected_quantity' => 'Enter a quantity different from the current quantity.']);
+            $assignmentChanged = (int) $data['reel_id'] !== (int) $data['original_reel_id']
+                || (int) $data['reel_provider_id'] !== (int) $data['original_reel_provider_id']
+                || (int) $data['reel_warehouse_id'] !== (int) $data['original_reel_warehouse_id'];
+            if ($change === 0 && !$assignmentChanged) {
+                throw ValidationException::withMessages(['corrected_quantity' => 'Change the reel, provider, warehouse, or quantity before submitting.']);
             }
 
+            $currentStocks = $stocks->where('status', '!=', 'voided');
+            $eligibleIds = $this->eligibleStocks(
+                $data['stock_batch_uuid'], $data['original_reel_id'],
+                $data['original_reel_provider_id'], $data['original_reel_warehouse_id']
+            )->pluck('id');
+            if ($assignmentChanged && $eligibleIds->count() !== $currentStocks->count()) {
+                throw ValidationException::withMessages([
+                    'reel_id' => 'Reel, provider, and warehouse can only be corrected when every current stock in this batch is an untouched Full reel.',
+                ]);
+            }
+
+            $targetReel = Reel::lockForUpdate()->findOrFail($data['reel_id']);
             $affectedCodes = [];
+            if ($assignmentChanged) {
+                foreach ($currentStocks as $stock) {
+                    $stock->update([
+                        'reel_id' => $targetReel->id,
+                        'reel_provider_id' => $data['reel_provider_id'],
+                        'reel_warehouse_id' => $data['reel_warehouse_id'],
+                        'original_length' => $targetReel->length,
+                        'balance_length' => $targetReel->length,
+                        'purchase_price' => $targetReel->unit_price,
+                    ]);
+                    ReelStockMovement::where('reel_stock_id', $stock->id)
+                        ->where('transaction_type', 'opening')->update([
+                            'reel_provider_id' => $data['reel_provider_id'],
+                            'reel_warehouse_id' => $data['reel_warehouse_id'],
+                            'length' => $targetReel->length,
+                            'balance_after' => $targetReel->length,
+                        ]);
+                    $affectedCodes[] = $stock->stock_code;
+                }
+            }
+
             if ($change > 0) {
-                $reel = Reel::lockForUpdate()->findOrFail($data['reel_id']);
                 for ($i = 0; $i < $change; $i++) {
                     $stock = ReelStock::create([
-                        'stock_code' => $this->nextStockCode(), 'reel_id' => $reel->id,
+                        'stock_code' => $this->nextStockCode(), 'reel_id' => $targetReel->id,
                         'reel_provider_id' => $data['reel_provider_id'], 'reel_warehouse_id' => $data['reel_warehouse_id'],
-                        'original_length' => $reel->length, 'balance_length' => $reel->length,
-                        'purchase_price' => $reel->unit_price, 'status' => 'full', 'is_active' => true,
+                        'original_length' => $targetReel->length, 'balance_length' => $targetReel->length,
+                        'purchase_price' => $targetReel->unit_price, 'status' => 'full', 'is_active' => true,
                     ]);
                     ReelStockMovement::create([
                         'batch_uuid' => $data['stock_batch_uuid'], 'reel_stock_id' => $stock->id,
+                        'reel_provider_id' => $data['reel_provider_id'],
                         'transaction_type' => 'opening', 'stock_status' => 'full', 'length' => $stock->original_length,
                         'balance_before' => 0, 'balance_after' => $stock->balance_length,
                         'reel_warehouse_id' => $stock->reel_warehouse_id,
@@ -152,6 +192,7 @@ class ReelStockCorrectionController extends Controller
                     $stock->update(['status' => 'voided', 'is_active' => false]);
                     ReelStockMovement::create([
                         'batch_uuid' => (string) Str::uuid(), 'reel_stock_id' => $stock->id,
+                        'reel_provider_id' => $stock->reel_provider_id,
                         'transaction_type' => 'adjustment', 'stock_status' => 'voided', 'length' => 0,
                         'balance_before' => $stock->balance_length, 'balance_after' => $stock->balance_length,
                         'reel_warehouse_id' => $stock->reel_warehouse_id,
@@ -161,15 +202,20 @@ class ReelStockCorrectionController extends Controller
                 }
             }
 
+            $affectedCodes = array_values(array_unique($affectedCodes));
             ReelStockCorrection::create([
-                'stock_batch_uuid' => $data['stock_batch_uuid'], 'reel_id' => $data['reel_id'],
+                'stock_batch_uuid' => $data['stock_batch_uuid'],
+                'original_reel_id' => $data['original_reel_id'],
+                'original_reel_provider_id' => $data['original_reel_provider_id'],
+                'original_reel_warehouse_id' => $data['original_reel_warehouse_id'],
+                'reel_id' => $data['reel_id'],
                 'reel_provider_id' => $data['reel_provider_id'], 'reel_warehouse_id' => $data['reel_warehouse_id'],
                 'previous_quantity' => $previous, 'corrected_quantity' => $data['corrected_quantity'],
                 'quantity_change' => $change, 'affected_stock_codes' => $affectedCodes,
                 'reason' => $data['reason'], 'created_by' => auth()->id(),
             ]);
 
-            return ['message' => 'Reel stock quantity corrected successfully.', 'affected_codes' => $affectedCodes];
+            return ['message' => 'Reel stock details corrected successfully.', 'affected_codes' => array_values(array_unique($affectedCodes))];
         });
 
         return response()->json($result);
@@ -233,11 +279,14 @@ class ReelStockCorrectionController extends Controller
 
     public function history(): JsonResponse
     {
-        $query = ReelStockCorrection::with(['reel:id,code', 'provider:id,name', 'warehouse:id,name'])->latest();
+        $query = ReelStockCorrection::with([
+            'reel:id,code', 'provider:id,name', 'warehouse:id,name',
+            'originalReel:id,code', 'originalProvider:id,name', 'originalWarehouse:id,name',
+        ])->latest();
         return DataTables::eloquent($query)
-            ->addColumn('reel_code', fn ($row) => $row->reel?->code ?? '—')
-            ->addColumn('provider_name', fn ($row) => $row->provider?->name ?? '—')
-            ->addColumn('warehouse_name', fn ($row) => $row->warehouse?->name ?? '—')
+            ->addColumn('reel_code', fn ($row) => $this->changeLabel($row->originalReel?->code, $row->reel?->code))
+            ->addColumn('provider_name', fn ($row) => $this->changeLabel($row->originalProvider?->name, $row->provider?->name))
+            ->addColumn('warehouse_name', fn ($row) => $this->changeLabel($row->originalWarehouse?->name, $row->warehouse?->name))
             ->editColumn('quantity_change', fn ($row) => ($row->quantity_change > 0 ? '+' : '') . $row->quantity_change)
             ->editColumn('created_at', fn ($row) => $row->created_at?->format('d M Y h:i a'))->toJson();
     }
@@ -282,5 +331,12 @@ class ReelStockCorrectionController extends Controller
         $part = fn ($value) => strtoupper(preg_replace('/[^A-Z0-9]/i', '', (string) $value));
         $number = fn ($value) => rtrim(rtrim(number_format((float) $value, 2, '.', ''), '0'), '.');
         return implode('-', [$part($brand->short_name ?: $brand->name), $part($type->short_name ?: $type->name), $part($gsm->gsm) . 'GSM', $number($data['width']), $number($data['length'])]);
+    }
+
+    private function changeLabel(?string $before, ?string $after): string
+    {
+        $before = $before ?: '—';
+        $after = $after ?: '—';
+        return $before === $after ? $after : $before . ' → ' . $after;
     }
 }
