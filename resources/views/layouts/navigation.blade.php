@@ -311,6 +311,11 @@
                         <i class="bx bx-radio-circle"></i>{{ __('Reel Dashboard') }}
                     </a>
                 </li>
+                <li class="{{ request()->routeIs('reels.finished.*') ? 'mm-active' : '' }}">
+                    <a href="{{ route('reels.finished.index') }}">
+                        <i class="bx bx-radio-circle"></i>{{ __('Finished Reels') }}
+                    </a>
+                </li>
                 <li class="{{ request()->routeIs('reels.settings.*') ? 'mm-active' : '' }}">
                     <a href="{{ route('reels.settings.index') }}">
                         <i class="bx bx-radio-circle"></i>{{ __('Reel Settings') }}

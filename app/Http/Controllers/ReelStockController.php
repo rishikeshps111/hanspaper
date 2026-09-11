@@ -337,7 +337,7 @@ class ReelStockController extends Controller
         abort_unless(in_array($stock->status, ['bit', 'finished'], true), 404);
         $stock->load([
             'reel', 'warehouse',
-            'usages' => fn ($query) => $query->with(['production.item', 'machine'])->orderByDesc('created_at'),
+            'usages' => fn ($query) => $query->with(['production.item', 'machine'])->orderBy('created_at')->orderBy('id'),
         ]);
         return view('reels.stock.usage', compact('stock'));
     }

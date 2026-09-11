@@ -2,98 +2,89 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Support\Facades\DB;
-use Illuminate\Http\Request;
-use Illuminate\Database\Eloquent\Relations\Relation;
-use App\Models\Order;
-use App\Models\Sale\SaleOrder;
-use App\Models\Purchase\PurchaseOrder;
-use App\Models\Customer;
-use App\Models\OrderPayment;
-use App\Models\OrderedProduct;
-use App\Traits\FormatNumber;
-use App\Models\Items\ItemCategory;
-
-use Illuminate\Support\Number;
-
-use App\Models\Sale\Sale;
-use App\Models\Sale\SaleReturn;
-use App\Models\Purchase\Purchase;
-use App\Models\Purchase\PurchaseReturn;
-use App\Models\Party\Party;
-use App\Models\Party\PartyTransaction;
-use App\Models\Party\PartyPayment;
+use App\Models\Dispatch\Dispatch;
 use App\Models\Expenses\Expense;
+use App\Models\Items\ItemCategory;
 use App\Models\Items\ItemTransaction;
 use App\Models\Items\ProductionItemMaster;
-use App\Models\Dispatch\Dispatch;
+use App\Models\Party\Party;
+use App\Models\Party\PartyPayment;
+use App\Models\Party\PartyTransaction;
+use App\Models\Purchase\Purchase;
+use App\Models\Purchase\PurchaseOrder;
+use App\Models\Purchase\PurchaseReturn;
+use App\Models\Sale\Sale;
+use App\Models\Sale\SaleOrder;
+use App\Models\Sale\SaleReturn;
+use App\Traits\FormatNumber;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
     use formatNumber;
 
-
     public function index()
     {
 
-        $pendingSaleOrders          = SaleOrder::whereDoesntHave('sale')
-                                                ->when(auth()->user()->can('dashboard.can.view.self.dashboard.details.only'), function ($query) {
-                                                    return $query->where('created_by', auth()->user()->id);
-                                                })
-                                                ->count();
-        $totalCompletedSaleOrders   = SaleOrder::whereHas('sale')
-                                                ->when(auth()->user()->can('dashboard.can.view.self.dashboard.details.only'), function ($query) {
-                                                    return $query->where('created_by', auth()->user()->id);
-                                                })
-                                                ->count();
+        $pendingSaleOrders = SaleOrder::whereDoesntHave('sale')
+            ->when(auth()->user()->can('dashboard.can.view.self.dashboard.details.only'), function ($query) {
+                return $query->where('created_by', auth()->user()->id);
+            })
+            ->count();
+        $totalCompletedSaleOrders = SaleOrder::whereHas('sale')
+            ->when(auth()->user()->can('dashboard.can.view.self.dashboard.details.only'), function ($query) {
+                return $query->where('created_by', auth()->user()->id);
+            })
+            ->count();
 
-        $partyBalance               = $this->paymentReceivables();
-        $totalPaymentReceivables    = $this->formatWithPrecision($partyBalance['receivable']);
-        $totalPaymentPaybles        = $this->formatWithPrecision($partyBalance['payable']);
+        $partyBalance = $this->paymentReceivables();
+        $totalPaymentReceivables = $this->formatWithPrecision($partyBalance['receivable']);
+        $totalPaymentPaybles = $this->formatWithPrecision($partyBalance['payable']);
 
-        $pendingPurchaseOrders          = PurchaseOrder::whereDoesntHave('purchase')
-                                                ->when(auth()->user()->can('dashboard.can.view.self.dashboard.details.only'), function ($query) {
-                                                    return $query->where('created_by', auth()->user()->id);
-                                                })
-                                                ->count();
-        $totalCompletedPurchaseOrders   = PurchaseOrder::whereHas('purchase')
-                                                ->when(auth()->user()->can('dashboard.can.view.self.dashboard.details.only'), function ($query) {
-                                                    return $query->where('created_by', auth()->user()->id);
-                                                })
-                                                ->count();
+        $pendingPurchaseOrders = PurchaseOrder::whereDoesntHave('purchase')
+            ->when(auth()->user()->can('dashboard.can.view.self.dashboard.details.only'), function ($query) {
+                return $query->where('created_by', auth()->user()->id);
+            })
+            ->count();
+        $totalCompletedPurchaseOrders = PurchaseOrder::whereHas('purchase')
+            ->when(auth()->user()->can('dashboard.can.view.self.dashboard.details.only'), function ($query) {
+                return $query->where('created_by', auth()->user()->id);
+            })
+            ->count();
 
         $totalCustomers = Party::where('party_type', 'customer')
-                                                ->when(auth()->user()->can('dashboard.can.view.self.dashboard.details.only'), function ($query) {
-                                                    // return $query->where('created_by', auth()->user()->id);
-                                                })
-                                                ->count();
+            ->when(auth()->user()->can('dashboard.can.view.self.dashboard.details.only'), function ($query) {
+                // return $query->where('created_by', auth()->user()->id);
+            })
+            ->count();
 
-        $totalExpense         = Expense::when(auth()->user()->can('dashboard.can.view.self.dashboard.details.only'), function ($query) {
-                                                    return $query->where('created_by', auth()->user()->id);
-                                                })
-                                                ->sum('grand_total');
-        $totalExpense         = $this->formatWithPrecision($totalExpense);
+        $totalExpense = Expense::when(auth()->user()->can('dashboard.can.view.self.dashboard.details.only'), function ($query) {
+            return $query->where('created_by', auth()->user()->id);
+        })
+            ->sum('grand_total');
+        $totalExpense = $this->formatWithPrecision($totalExpense);
 
-        $recentInvoices       = Sale::when(auth()->user()->can('dashboard.can.view.self.dashboard.details.only'), function ($query) {
-                                                    return $query->where('created_by', auth()->user()->id);
-                                                })
-                                                ->orderByDesc('id')
-                                                ->limit(10)
-                                                ->get();
+        $recentInvoices = Sale::when(auth()->user()->can('dashboard.can.view.self.dashboard.details.only'), function ($query) {
+            return $query->where('created_by', auth()->user()->id);
+        })
+            ->orderByDesc('id')
+            ->limit(10)
+            ->get();
 
-        $saleVsPurchase       = $this->saleVsPurchase();
-        $trendingItems        = $this->trendingItems();
-        
+        $saleVsPurchase = $this->saleVsPurchase();
+        $trendingItems = $this->trendingItems();
+
         $pendingDispatches = Dispatch::where('status', 'pending')
             ->count();
-       $itemMasters = ProductionItemMaster::whereIn('status', ['Partial', 'Pending'])->count();
-       
+        $itemMasters = ProductionItemMaster::whereIn('status', ['Partial', 'Pending'])->count();
+
         $totalAssignPending = ProductionItemMaster::where('status', 'Assigning Pending')->count();
         $totalPending = ProductionItemMaster::where('status', 'Pending')->count();
         $totalPackingPending = ProductionItemMaster::where('status', 'Packing Pending')->count();
         $totalDispatchPending = Dispatch::whereIn('status', ['Pending', 'Dispatch Pending'])->count();
         $totalPartiallyDispatchedPending = Dispatch::where('status', 'Dispatched')->count();
-                $totalPartial = ProductionItemMaster::where('status', 'Partial')->count();
+        $totalPartial = ProductionItemMaster::where('status', 'Partial')->count();
 
         $categoryPendingProductions = ItemCategory::select(
             'item_categories.id',
@@ -109,56 +100,47 @@ class DashboardController extends Controller
     ")
             ->get();
 
-        $inProgressProductions = ProductionItemMaster::query()
-            ->where('status', 'In Progress')
-            ->whereHas('activeRun')
+        $productionMachines = \App\Models\Machines\Machine::query()
             ->with([
-                'item:id,name',
-                'purchaseOrder:id,purchase_order_id,customer_id',
-                'purchaseOrder.party:id,first_name,last_name',
-                'activeRun.machine:id,machine_name',
-                'activeRun.productionUser:id,full_name',
-                'activeRun.reelStock.reel:id,code',
+                'activeProductionRun.production.item:id,name',
+                'activeProductionRun.production.purchaseOrder.party',
+                'activeProductionRun.productionUser:id,full_name',
+                'activeProductionRun.reelStock.reel:id,code',
             ])
-            ->withSum('productionLists as completed_quantity', 'quantity')
-            ->orderByDesc(
-                \App\Models\ProductionRun::select('started_at')
-                    ->whereColumn('production_runs.production_id', 'production_item_masters.id')
-                    ->where('production_runs.status', 'in_progress')
-                    ->limit(1)
-            )
-            ->get();
-
-
-
+            ->orderBy('id')
+            ->get()
+            // ->sortBy('machine_name', SORT_NATURAL | SORT_FLAG_CASE)
+            ->values();
+        $runningMachineCount = $productionMachines->filter(fn ($machine) => $machine->activeProductionRun !== null)->count();
+        $idleMachineCount = $productionMachines->count() - $runningMachineCount;
 
         return view('dashboard', compact(
-                                            'pendingSaleOrders',
-                                            'pendingPurchaseOrders',
+            'pendingSaleOrders',
+            'pendingPurchaseOrders',
 
-                                            'totalCompletedSaleOrders',
-                                            'totalCompletedPurchaseOrders',
+            'totalCompletedSaleOrders',
+            'totalCompletedPurchaseOrders',
 
-                                            'totalCustomers',
-                                            'totalPaymentReceivables',
-                                            'totalPaymentPaybles',
-                                            'totalExpense',
+            'totalCustomers',
+            'totalPaymentReceivables',
+            'totalPaymentPaybles',
+            'totalExpense',
 
-                                            'saleVsPurchase',
-                                            'trendingItems',
-                                            'recentInvoices',
-                                            'pendingDispatches',
-                                            'itemMasters',
-                                              
+            'saleVsPurchase',
+            'trendingItems',
+            'recentInvoices',
+            'pendingDispatches',
+            'itemMasters',
+
             'totalAssignPending',
             'totalPending',
             'totalPackingPending',
-             'totalDispatchPending',
+            'totalDispatchPending',
             'totalPartiallyDispatchedPending',
             'totalPartial',
-             'categoryPendingProductions',
-             'inProgressProductions'
-                                        ));
+            'categoryPendingProductions',
+            'productionMachines', 'runningMachineCount', 'idleMachineCount'
+        ));
     }
 
     public function inProgressProductionDetails(ProductionItemMaster $production): \Illuminate\Http\JsonResponse
@@ -189,7 +171,7 @@ class DashboardController extends Controller
         return response()->json([
             'work_order_id' => $production->purchaseOrder?->purchase_order_id ?? 'Not Available',
             'production_id' => $production->id,
-            'customer' => trim(($party?->first_name ?? '') . ' ' . ($party?->last_name ?? '')) ?: 'Not Available',
+            'customer' => trim(($party?->first_name ?? '').' '.($party?->last_name ?? '')) ?: 'Not Available',
             'product' => $production->item?->name ?? 'Not Available',
             'requested_quantity' => (float) $production->requested_qty,
             'completed_quantity' => $completed,
@@ -210,6 +192,7 @@ class DashboardController extends Controller
                 ->values()
                 ->map(function ($entry) {
                     $usage = $entry->reelStockUsage;
+
                     return [
                         'quantity' => (float) $entry->quantity,
                         'stock_code' => $usage?->stock?->stock_code ?? 'Not Available',
@@ -243,18 +226,18 @@ class DashboardController extends Controller
 
             // Get value for this month, e.g. from database
             $sales[] = Sale::whereMonth('sale_date', $now->copy()->subMonths($i)->month)
-                   ->whereYear('sale_date', $now->copy()->subMonths($i)->year)
-                   ->when(auth()->user()->can('dashboard.can.view.self.dashboard.details.only'), function ($query) {
-                        return $query->where('created_by', auth()->user()->id);
-                    })
-                   ->count();
+                ->whereYear('sale_date', $now->copy()->subMonths($i)->year)
+                ->when(auth()->user()->can('dashboard.can.view.self.dashboard.details.only'), function ($query) {
+                    return $query->where('created_by', auth()->user()->id);
+                })
+                ->count();
 
             $purchases[] = Purchase::whereMonth('purchase_date', $now->copy()->subMonths($i)->month)
-                   ->whereYear('purchase_date', $now->copy()->subMonths($i)->year)
-                   ->when(auth()->user()->can('dashboard.can.view.self.dashboard.details.only'), function ($query) {
-                        return $query->where('created_by', auth()->user()->id);
-                    })
-                   ->count();
+                ->whereYear('purchase_date', $now->copy()->subMonths($i)->year)
+                ->when(auth()->user()->can('dashboard.can.view.self.dashboard.details.only'), function ($query) {
+                    return $query->where('created_by', auth()->user()->id);
+                })
+                ->count();
 
         }
 
@@ -264,24 +247,24 @@ class DashboardController extends Controller
 
         $saleVsPurchase = [];
 
-        for($i = 0; $i < count($labels); $i++) {
-          $saleVsPurchase[] = [
-            'label'     => $labels[$i],
-            'sales'     => $sales[$i],
-            'purchases' => $purchases[$i],
-          ];
+        for ($i = 0; $i < count($labels); $i++) {
+            $saleVsPurchase[] = [
+                'label' => $labels[$i],
+                'sales' => $sales[$i],
+                'purchases' => $purchases[$i],
+            ];
         }
 
         return $saleVsPurchase;
     }
 
-    public function trendingItems() : array
+    public function trendingItems(): array
     {
         // Get top 4 trending items (adjust limit as needed)
         return ItemTransaction::query()
             ->select([
                 'items.name',
-                DB::raw('SUM(item_transactions.quantity) as total_quantity')
+                DB::raw('SUM(item_transactions.quantity) as total_quantity'),
             ])
             ->join('items', 'items.id', '=', 'item_transactions.item_id')
             ->where('item_transactions.transaction_type', getMorphedModelName(Sale::class))
@@ -295,16 +278,15 @@ class DashboardController extends Controller
             ->toArray();
     }
 
-
-
-    public function paymentReceivables(){
+    public function paymentReceivables()
+    {
         // Retrieve opening balance from PartyTransaction
         $openingBalance = PartyTransaction::selectRaw('COALESCE(SUM(to_receive) - SUM(to_pay), 0) as opening_balance')
-                                            ->when(auth()->user()->can('dashboard.can.view.self.dashboard.details.only'), function ($query) {
-                                                return $query->where('created_by', auth()->user()->id);
-                                            })
-                                            ->first()
-                                            ->opening_balance ?? 0;
+            ->when(auth()->user()->can('dashboard.can.view.self.dashboard.details.only'), function ($query) {
+                return $query->where('created_by', auth()->user()->id);
+            })
+            ->first()
+            ->opening_balance ?? 0;
 
         // Get total amount received from customers (Sale Adjustments)
         $partyPaymentReceiveSum = PartyPayment::where('payment_direction', 'receive')
@@ -359,12 +341,12 @@ class DashboardController extends Controller
         $partyPayable = $partyPaymentPaySum + $purchaseBalance - $purchaseReturnBalance;
 
         return [
-                'payable' => abs($partyPayable),
-                'receivable' => abs($partyReceivable),
-            ];
+            'payable' => abs($partyPayable),
+            'receivable' => abs($partyReceivable),
+        ];
     }
-    
-     public function getCategoryItems(Request $request)
+
+    public function getCategoryItems(Request $request)
     {
         $categoryId = $request->category_id;
         $status = $request->status;

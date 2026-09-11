@@ -243,6 +243,9 @@
                                                             <div class="input-group">
                                                                 <select class="form-select single-select-clear-field" id="machines" name="machines" data-placeholder="Choose machine" {{ $activeRun ? '' : 'required' }}>
                                                                     <option value=""></option>
+                                                                    @if($activeRun?->machine)
+                                                                        <option value="{{ $activeRun->machine_id }}" selected>{{ $activeRun->machine->machine_name }}</option>
+                                                                    @endif
                                                                     @foreach ($availableMachines as $machine)
                                                                         <option value="{{ $machine->id }}" @selected($productionItemMaster->assigned_machine_id == $machine->id)>{{ $machine->machine_name }}</option>
                                                                     @endforeach
@@ -326,8 +329,15 @@
                                                                 </div>
                                                             </div>
                                                         </div>
+                                                        @if ($activeRun)
+                                                            <div id="productionCorrectionReason" class="col-12 mt-3 mb-3 d-none"><label for="correction_reason" class="form-label">Reason for Correction <span class="text-muted">(optional)</span></label><textarea id="correction_reason" name="correction_reason" class="form-control" maxlength="1000" disabled></textarea></div>
+                                                        @endif
                                                         <div class="col-md-12 mb-3 px-4 text-end">
-                                                            <div class="gap-3">
+                                                            <div class="d-flex flex-wrap justify-content-end gap-3">
+                                                                @if ($activeRun)
+                                                                    <button type="button" id="correctProductionEntry" class="btn btn-warning">Correct Production Entry</button>
+                                                                    <a href="{{ url()->current() }}" id="cancelProductionCorrection" class="btn btn-outline-secondary d-none">Cancel Correction</a>
+                                                                @endif
                                                                 <x-button type="submit" class="primary px-4"
                                                                     text="{{ $activeRun ? __('Update Production') : __('Start Production') }}" />
                                                             </div>
@@ -774,6 +784,21 @@
                     if (response.redirect) window.location.href = response.redirect;
                 });
             };
+
+            $('#correctProductionEntry').on('click', function () {
+                const form = $('#productionForm');
+                form.data('mode', 'correct').attr('action', @json(route('item.production.correct-production')));
+                $('#machines').closest('.col-md-4').removeClass('d-none');
+                form.find('[name="packed_by"]').closest('.col-md-4').removeClass('d-none');
+                $('#reel_stock_id, #core_id, #machines').prop('disabled', false).prop('required', true);
+                $('#output_roll_width, #roll_length').prop('readonly', false).prop('required', true);
+                $('#production_qty, #reel_status_after_usage').prop('required', false).prop('disabled', true);
+                $('#production_qty').closest('.col-md-4').addClass('d-none');
+                $('#correction_reason').prop('disabled', false).prop('required', false);
+                $('#productionCorrectionReason, #cancelProductionCorrection').removeClass('d-none');
+                form.find('button[type="submit"]').text('Save Correction');
+                $(this).addClass('d-none');
+            });
 
             $('#productionForm').off('submit').on('submit', function (event) {
                 event.preventDefault();

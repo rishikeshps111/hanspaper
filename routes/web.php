@@ -44,6 +44,7 @@ use App\Http\Controllers\ReelStockController;
 use App\Http\Controllers\ReelSaleController;
 use App\Http\Controllers\ReelDashboardController;
 use App\Http\Controllers\ReelStockCorrectionController;
+use App\Http\Controllers\FinishedReelController;
 use App\Http\Controllers\BarcodeWorkOrderController;
 use App\Http\Controllers\CoreController;
 use App\Http\Controllers\PackingMaterialController;
@@ -1111,6 +1112,7 @@ Route::middleware('auth')->group(function () {
                         ->name('item.production.store-production');
                 Route::post('/start-production', [ProductionItemMasterController::class, 'startProduction'])
                         ->name('item.production.start-production');
+                Route::post('/correct-production', [ProductionItemMasterController::class, 'correctProduction'])->name('item.production.correct-production');
                 Route::post('/store-packing', [ProductionItemMasterController::class, 'storePacking'])
                         ->name('item.production.store-packing');
 
@@ -1913,6 +1915,9 @@ Route::middleware('auth')->group(function () {
                 Route::get('/dashboard/{reel}/stocks', [ReelDashboardController::class, 'stocks'])->name('dashboard.stocks');
                 Route::post('/dashboard/{reel}/stocks/transfer', [ReelDashboardController::class, 'transfer'])->name('dashboard.stocks.transfer');
                 Route::post('/dashboard/{reel}/stocks/sale', [ReelDashboardController::class, 'sale'])->name('dashboard.stocks.sale');
+                Route::get('/finished', [FinishedReelController::class, 'index'])->name('finished.index');
+                Route::get('/finished/data', [FinishedReelController::class, 'data'])->name('finished.data');
+                Route::get('/finished/{stock}/usage', [ReelStockController::class, 'usage'])->name('finished.usage');
                 Route::get('/settings', [ReelSettingsController::class, 'index'])->name('settings.index');
                 Route::get('/settings/{type}/data', [ReelSettingsController::class, 'data'])->name('settings.data');
                 Route::post('/settings/{type}', [ReelSettingsController::class, 'store'])->name('settings.store');

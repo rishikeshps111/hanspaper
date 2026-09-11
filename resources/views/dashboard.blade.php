@@ -2,519 +2,537 @@
 @section('title', __('app.dashboard'))
 
 @section('content')
-<!--start page wrapper -->
-<div class="page-wrapper">
-	<div class="page-content">
+	<!--start page wrapper -->
+	<div class="page-wrapper">
+		<div class="page-content">
 
-		@can('dashboard.can.view.widget.cards')
-			<div class="row row-cols-1 row-cols-md-2 row-cols-xl-4">
-				<div class="col d-none">
-					<div class="card radius-10 border-start border-0 border-4 border-info">
-						<div class="card-body">
-							<div class="d-flex align-items-center">
-								<div>
-									<p class="mb-0 text-secondary">{{ __('Pending Production') }}</p>
-									<h4 class="my-1 text-info">{{ $itemMasters }}</h4>
+			@can('dashboard.can.view.widget.cards')
+				<div class="row row-cols-1 row-cols-md-2 row-cols-xl-4">
+					<div class="col d-none">
+						<div class="card radius-10 border-start border-0 border-4 border-info">
+							<div class="card-body">
+								<div class="d-flex align-items-center">
+									<div>
+										<p class="mb-0 text-secondary">{{ __('Pending Production') }}</p>
+										<h4 class="my-1 text-info">{{ $itemMasters }}</h4>
 
-								</div>
-								<div class="widgets-icons-2 rounded-circle bg-gradient-blues text-white ms-auto"><i
-										class='bx bxs-cart'></i>
+									</div>
+									<div class="widgets-icons-2 rounded-circle bg-gradient-blues text-white ms-auto"><i
+											class='bx bxs-cart'></i>
+									</div>
 								</div>
 							</div>
 						</div>
 					</div>
-				</div>
-				<div class="col d-none">
-					<div class="card radius-10 border-start border-0 border-4 border-success">
-						<div class="card-body">
-							<div class="d-flex align-items-center">
-								<div>
-									<p class="mb-0 text-secondary">{{ __('Pending Dispatch') }}</p>
-									<h4 class="my-1 text-success">{{ $pendingDispatches }}</h4>
+					<div class="col d-none">
+						<div class="card radius-10 border-start border-0 border-4 border-success">
+							<div class="card-body">
+								<div class="d-flex align-items-center">
+									<div>
+										<p class="mb-0 text-secondary">{{ __('Pending Dispatch') }}</p>
+										<h4 class="my-1 text-success">{{ $pendingDispatches }}</h4>
 
-								</div>
-								<div class="widgets-icons-2 rounded-circle bg-gradient-ohhappiness text-white ms-auto"><i
-										class='bx bxs-check-circle'></i>
+									</div>
+									<div class="widgets-icons-2 rounded-circle bg-gradient-ohhappiness text-white ms-auto"><i
+											class='bx bxs-check-circle'></i>
+									</div>
 								</div>
 							</div>
 						</div>
 					</div>
-				</div>
-				<div class="col d-none">
-					<div class="card radius-10 border-start border-0 border-4 border-danger">
-						<div class="card-body">
-							<div class="d-flex align-items-center">
-								<div>
-									<p class="mb-0 text-secondary">{{ __('payment.payment_receivables') }}</p>
-									<h4 class="my-1 text-danger">{{ $totalPaymentReceivables }}</h4>
+					<div class="col d-none">
+						<div class="card radius-10 border-start border-0 border-4 border-danger">
+							<div class="card-body">
+								<div class="d-flex align-items-center">
+									<div>
+										<p class="mb-0 text-secondary">{{ __('payment.payment_receivables') }}</p>
+										<h4 class="my-1 text-danger">{{ $totalPaymentReceivables }}</h4>
 
-								</div>
-								<div class="widgets-icons-2 rounded-circle bg-gradient-burning text-white ms-auto"><i
-										class='bx bxs-down-arrow-circle'></i>
+									</div>
+									<div class="widgets-icons-2 rounded-circle bg-gradient-burning text-white ms-auto"><i
+											class='bx bxs-down-arrow-circle'></i>
+									</div>
 								</div>
 							</div>
 						</div>
 					</div>
-				</div>
 
-				<div class="col d-none">
-					<div class="card radius-10 border-start border-0 border-4 border-warning">
-						<div class="card-body">
-							<div class="d-flex align-items-center">
-								<div>
-									<p class="mb-0 text-secondary">{{ __('payment.payment_paybles') }}</p>
-									<h4 class="my-1 text-warning">{{ $totalPaymentPaybles }}</h4>
+					<div class="col d-none">
+						<div class="card radius-10 border-start border-0 border-4 border-warning">
+							<div class="card-body">
+								<div class="d-flex align-items-center">
+									<div>
+										<p class="mb-0 text-secondary">{{ __('payment.payment_paybles') }}</p>
+										<h4 class="my-1 text-warning">{{ $totalPaymentPaybles }}</h4>
 
-								</div>
-								<div class="widgets-icons-2 rounded-circle bg-gradient-orange text-white ms-auto"><i
-										class='bx bxs-up-arrow-circle'></i>
+									</div>
+									<div class="widgets-icons-2 rounded-circle bg-gradient-orange text-white ms-auto"><i
+											class='bx bxs-up-arrow-circle'></i>
+									</div>
 								</div>
 							</div>
 						</div>
 					</div>
-				</div>
 
-				<div class="col">
-					<div class="card radius-10 border-start border-0 border-4 border-info">
-						<div class="card-body">
-							<div class="d-flex align-items-center">
-								<div>
-									<p class="mb-0 text-secondary">{{ __('purchase.order.pending') }}</p>
-									<h4 class="my-1 text-info">{{ $pendingPurchaseOrders }}</h4>
+					<div class="col">
+						<div class="card radius-10 border-start border-0 border-4 border-info">
+							<div class="card-body">
+								<div class="d-flex align-items-center">
+									<div>
+										<p class="mb-0 text-secondary">{{ __('purchase.order.pending') }}</p>
+										<h4 class="my-1 text-info">{{ $pendingPurchaseOrders }}</h4>
 
-								</div>
-								<div class="widgets-icons-2 rounded-circle bg-gradient-blues text-white ms-auto"><i
-										class='bx bxs-purchase-tag'></i>
+									</div>
+									<div class="widgets-icons-2 rounded-circle bg-gradient-blues text-white ms-auto"><i
+											class='bx bxs-purchase-tag'></i>
+									</div>
 								</div>
 							</div>
 						</div>
 					</div>
-				</div>
-				<div class="col">
-					<div class="card radius-10 border-start border-0 border-4 border-success">
-						<div class="card-body">
-							<div class="d-flex align-items-center">
-								<div>
-									<p class="mb-0 text-secondary">{{ __('purchase.order.completed') }}</p>
-									<h4 class="my-1 text-success">{{ $totalCompletedPurchaseOrders }}</h4>
+					<div class="col">
+						<div class="card radius-10 border-start border-0 border-4 border-success">
+							<div class="card-body">
+								<div class="d-flex align-items-center">
+									<div>
+										<p class="mb-0 text-secondary">{{ __('purchase.order.completed') }}</p>
+										<h4 class="my-1 text-success">{{ $totalCompletedPurchaseOrders }}</h4>
 
-								</div>
-								<div class="widgets-icons-2 rounded-circle bg-gradient-ohhappiness text-white ms-auto"><i
-										class='bx bx-check-double'></i>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-				<div class="col d-none">
-					<div class="card radius-10 border-start border-0 border-4 border-danger">
-						<div class="card-body">
-							<div class="d-flex align-items-center">
-								<div>
-									<p class="mb-0 text-secondary">{{ __('expense.total_expenses') }}</p>
-									<h4 class="my-1 text-danger">{{ $totalExpense }}</h4>
-								</div>
-								<div class="widgets-icons-2 rounded-circle bg-gradient-burning text-white ms-auto"><i
-										class='bx bxs-minus-circle'></i>
+									</div>
+									<div class="widgets-icons-2 rounded-circle bg-gradient-ohhappiness text-white ms-auto"><i
+											class='bx bx-check-double'></i>
+									</div>
 								</div>
 							</div>
 						</div>
 					</div>
-				</div>
+					<div class="col d-none">
+						<div class="card radius-10 border-start border-0 border-4 border-danger">
+							<div class="card-body">
+								<div class="d-flex align-items-center">
+									<div>
+										<p class="mb-0 text-secondary">{{ __('expense.total_expenses') }}</p>
+										<h4 class="my-1 text-danger">{{ $totalExpense }}</h4>
+									</div>
+									<div class="widgets-icons-2 rounded-circle bg-gradient-burning text-white ms-auto"><i
+											class='bx bxs-minus-circle'></i>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
 
-				<div class="col">
-					<div class="card radius-10 border-start border-0 border-4 border-warning">
-						<div class="card-body">
-							<div class="d-flex align-items-center">
-								<div>
-									<p class="mb-0 text-secondary">{{ __('customer.total') }}</p>
-									<h4 class="my-1 text-warning">{{ $totalCustomers }}</h4>
+					<div class="col">
+						<div class="card radius-10 border-start border-0 border-4 border-warning">
+							<div class="card-body">
+								<div class="d-flex align-items-center">
+									<div>
+										<p class="mb-0 text-secondary">{{ __('customer.total') }}</p>
+										<h4 class="my-1 text-warning">{{ $totalCustomers }}</h4>
 
-								</div>
-								<div class="widgets-icons-2 rounded-circle bg-gradient-orange text-white ms-auto"><i
-										class='bx bxs-group'></i>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-				<div class="col">
-					<div class="card radius-10 border-start border-0 border-4 border-info">
-						<div class="card-body">
-							<div class="d-flex align-items-center">
-								<a href="{{ route('production.filterlist', ['status' => 'pending']) }}">
-									<p class="mb-0 text-secondary">{{ __('Production Pending') }}</p>
-									<h4 class="my-1 text-info">{{ $totalPending }}</h4>
-								</a>
-								<!-- Production Pending Icon -->
-								<div class="widgets-icons-2 rounded-circle bg-gradient-blues text-white ms-auto">
-									<i class='bx bx-cog'></i> {{-- Settings/Process icon --}}
+									</div>
+									<div class="widgets-icons-2 rounded-circle bg-gradient-orange text-white ms-auto"><i
+											class='bx bxs-group'></i>
+									</div>
 								</div>
 							</div>
 						</div>
 					</div>
-				</div>
-				<div class="col">
-					<div class="card radius-10 border-start border-0 border-4 border-warning">
-						<div class="card-body">
-							<div class="d-flex align-items-center">
-								<a href="{{ route('production.filterlist', ['status' => 'pending']) }}">
-									<p class="mb-0 text-secondary">{{ __('Production Partial') }}</p>
-									<h4 class="my-1 text-warning">{{ $totalPartial }}</h4>
-								</a>
-								<!-- Production Pending Icon -->
-								<div class="widgets-icons-2 rounded-circle bg-gradient-orange text-white ms-auto">
-									<i class='bx bx-cog'></i> {{-- Settings/Process icon --}}
+					<div class="col">
+						<div class="card radius-10 border-start border-0 border-4 border-info">
+							<div class="card-body">
+								<div class="d-flex align-items-center">
+									<a href="{{ route('production.filterlist', ['status' => 'pending']) }}">
+										<p class="mb-0 text-secondary">{{ __('Production Pending') }}</p>
+										<h4 class="my-1 text-info">{{ $totalPending }}</h4>
+									</a>
+									<!-- Production Pending Icon -->
+									<div class="widgets-icons-2 rounded-circle bg-gradient-blues text-white ms-auto">
+										<i class='bx bx-cog'></i> {{-- Settings/Process icon --}}
+									</div>
 								</div>
 							</div>
 						</div>
 					</div>
-				</div>
+					<div class="col">
+						<div class="card radius-10 border-start border-0 border-4 border-warning">
+							<div class="card-body">
+								<div class="d-flex align-items-center">
+									<a href="{{ route('production.filterlist', ['status' => 'pending']) }}">
+										<p class="mb-0 text-secondary">{{ __('Production Partial') }}</p>
+										<h4 class="my-1 text-warning">{{ $totalPartial }}</h4>
+									</a>
+									<!-- Production Pending Icon -->
+									<div class="widgets-icons-2 rounded-circle bg-gradient-orange text-white ms-auto">
+										<i class='bx bx-cog'></i> {{-- Settings/Process icon --}}
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
 
-				<div class="col">
-					<div class="card radius-10 border-start border-0 border-4 border-success">
-						<div class="card-body">
-							<div class="d-flex align-items-center">
-								<a href="{{ route('production.filterlist', ['status' => 'assignpending']) }}">
-									<p class="mb-0 text-secondary">{{ __('Assigning Pending') }}</p>
-									<h4 class="my-1 text-success">{{ $totalAssignPending }}</h4>
-								</a>
-								<!-- Assigning Pending Icon -->
-								<div class="widgets-icons-2 rounded-circle bg-gradient-ohhappiness text-white ms-auto">
-									<i class='bx bx-user-check'></i> {{-- Assigning/User check icon --}}
+					<div class="col">
+						<div class="card radius-10 border-start border-0 border-4 border-success">
+							<div class="card-body">
+								<div class="d-flex align-items-center">
+									<a href="{{ route('production.filterlist', ['status' => 'assignpending']) }}">
+										<p class="mb-0 text-secondary">{{ __('Assigning Pending') }}</p>
+										<h4 class="my-1 text-success">{{ $totalAssignPending }}</h4>
+									</a>
+									<!-- Assigning Pending Icon -->
+									<div class="widgets-icons-2 rounded-circle bg-gradient-ohhappiness text-white ms-auto">
+										<i class='bx bx-user-check'></i> {{-- Assigning/User check icon --}}
+									</div>
 								</div>
 							</div>
 						</div>
 					</div>
-				</div>
 
-				<div class="col">
-					<div class="card radius-10 border-start border-0 border-4 border-warning">
-						<div class="card-body">
-							<div class="d-flex align-items-center">
-								<a href="{{ route('production.filterlist', ['status' => 'packingpending']) }}">
-									<p class="mb-0 text-secondary">{{ __('Packing Pending') }}</p>
-									<h4 class="my-1 text-warning">{{ $totalPackingPending }}</h4>
-								</a>
-								<!-- Packing Pending Icon -->
-								<div class="widgets-icons-2 rounded-circle bg-gradient-orange text-white ms-auto">
-									<i class='bx bx-package'></i> {{-- Package/Box icon --}}
+					<div class="col">
+						<div class="card radius-10 border-start border-0 border-4 border-warning">
+							<div class="card-body">
+								<div class="d-flex align-items-center">
+									<a href="{{ route('production.filterlist', ['status' => 'packingpending']) }}">
+										<p class="mb-0 text-secondary">{{ __('Packing Pending') }}</p>
+										<h4 class="my-1 text-warning">{{ $totalPackingPending }}</h4>
+									</a>
+									<!-- Packing Pending Icon -->
+									<div class="widgets-icons-2 rounded-circle bg-gradient-orange text-white ms-auto">
+										<i class='bx bx-package'></i> {{-- Package/Box icon --}}
+									</div>
 								</div>
 							</div>
 						</div>
 					</div>
-				</div>
-				<div class="col">
-					<div class="card radius-10 border-start border-0 border-4 border-info">
-						<div class="card-body">
-							<div class="d-flex align-items-center">
-								<a href="{{ route('dispatch.filterlist', ['status' => 'pending']) }}">
-									<p class="mb-0 text-secondary">
-										{{ __('Dispatch Pending') }}
-									</p>
-									<h4 class="my-1 text-info">{{ $totalDispatchPending }}</h4>
-								</a>
-								<!-- Production Pending Icon -->
-								<div class="widgets-icons-2 rounded-circle bg-gradient-blues text-white ms-auto">
-									<i class='bx bx-send'></i> {{-- Settings/Process icon --}}
+					<div class="col">
+						<div class="card radius-10 border-start border-0 border-4 border-info">
+							<div class="card-body">
+								<div class="d-flex align-items-center">
+									<a href="{{ route('dispatch.filterlist', ['status' => 'pending']) }}">
+										<p class="mb-0 text-secondary">
+											{{ __('Dispatch Pending') }}
+										</p>
+										<h4 class="my-1 text-info">{{ $totalDispatchPending }}</h4>
+									</a>
+									<!-- Production Pending Icon -->
+									<div class="widgets-icons-2 rounded-circle bg-gradient-blues text-white ms-auto">
+										<i class='bx bx-send'></i> {{-- Settings/Process icon --}}
+									</div>
 								</div>
 							</div>
 						</div>
 					</div>
-				</div>
 
-				<div class="col">
-					<div class="card radius-10 border-start border-0 border-4 border-success">
-						<div class="card-body">
-							<div class="d-flex align-items-center">
-								<a href="{{ route('dispatch.filterlist', ['status' => 'partial']) }}">
-									<p class="mb-0 text-secondary">{{ __('Partially Dispatched') }}</p>
-									<h4 class="my-1 text-success">{{ $totalPartiallyDispatchedPending }}</h4>
-								</a>
-								<!-- Assigning Pending Icon -->
-								<div class="widgets-icons-2 rounded-circle bg-gradient-ohhappiness text-white ms-auto">
-									<i class='bx bx-transfer'></i> {{-- Assigning/User check icon --}}
+					<div class="col">
+						<div class="card radius-10 border-start border-0 border-4 border-success">
+							<div class="card-body">
+								<div class="d-flex align-items-center">
+									<a href="{{ route('dispatch.filterlist', ['status' => 'partial']) }}">
+										<p class="mb-0 text-secondary">{{ __('Partially Dispatched') }}</p>
+										<h4 class="my-1 text-success">{{ $totalPartiallyDispatchedPending }}</h4>
+									</a>
+									<!-- Assigning Pending Icon -->
+									<div class="widgets-icons-2 rounded-circle bg-gradient-ohhappiness text-white ms-auto">
+										<i class='bx bx-transfer'></i> {{-- Assigning/User check icon --}}
+									</div>
 								</div>
 							</div>
 						</div>
 					</div>
-				</div>
+				</div><!--end row-->
+			@endcan
+			<div class="row d-none">
+				@can('dashboard.can.view.sale.vs.purchase.bar.chart')
+					<div class="col-12 col-lg-8 d-flex">
+						<div class="card radius-10 w-100">
+							<div class="card-header">
+								<div class="d-flex align-items-center">
+									<div>
+										<h6 class="mb-0">{{ __('sale.sale_vs_purchase') }}</h6>
+									</div>
+								</div>
+							</div>
+							<div class="card-body">
+								<div class="d-flex align-items-center ms-auto font-13 gap-2 mb-3">
+									<span class="border px-1 rounded cursor-pointer"><i class="bx bxs-circle me-1"
+											style="color: #ffc107"></i>{{ __('purchase.purchase_bills') }}</span>
+									<span class="border px-1 rounded cursor-pointer"><i class="bx bxs-circle me-1"
+											style="color: #14abef"></i>{{ __('sale.sale_invoices') }}</span>
+								</div>
+								<div class="chart-container-1">
+									<canvas id="chart1"></canvas>
+								</div>
+							</div>
+						</div>
+					</div>
+				@endcan
+				@can('dashboard.can.view.trending.items.pie.chart')
+					<div class="col-12 col-lg-4 d-flex">
+						<div class="card radius-10 w-100">
+							<div class="card-header">
+								<div class="d-flex align-items-center">
+									<div>
+										<h6 class="mb-0">{{ __('item.trending') }}</h6>
+									</div>
+								</div>
+							</div>
+							<div class="card-body">
+								<div class="chart-container-2">
+									<canvas id="chart2"></canvas>
+								</div>
+							</div>
+							<ul class="list-group list-group-flush">
+								@foreach($trendingItems as $item)
+									<li
+										class="list-group-item d-flex bg-transparent justify-content-between align-items-center border-top">
+										{{ $item['name'] }}
+										<span
+											class="badge bg-success rounded-pill">{{ $formatNumber->formatQuantity($item['total_quantity']) }}</span>
+									</li>
+								@endforeach
+							</ul>
+						</div>
+					</div>
+				@endcan
 			</div><!--end row-->
-		@endcan
-		<div class="row d-none">
-			@can('dashboard.can.view.sale.vs.purchase.bar.chart')
-				<div class="col-12 col-lg-8 d-flex">
-					<div class="card radius-10 w-100">
-						<div class="card-header">
-							<div class="d-flex align-items-center">
-								<div>
-									<h6 class="mb-0">{{ __('sale.sale_vs_purchase') }}</h6>
-								</div>
-							</div>
-						</div>
-						<div class="card-body">
-							<div class="d-flex align-items-center ms-auto font-13 gap-2 mb-3">
-								<span class="border px-1 rounded cursor-pointer"><i class="bx bxs-circle me-1"
-										style="color: #ffc107"></i>{{ __('purchase.purchase_bills') }}</span>
-								<span class="border px-1 rounded cursor-pointer"><i class="bx bxs-circle me-1"
-										style="color: #14abef"></i>{{ __('sale.sale_invoices') }}</span>
-							</div>
-							<div class="chart-container-1">
-								<canvas id="chart1"></canvas>
-							</div>
-						</div>
-					</div>
-				</div>
-			@endcan
-			@can('dashboard.can.view.trending.items.pie.chart')
-				<div class="col-12 col-lg-4 d-flex">
-					<div class="card radius-10 w-100">
-						<div class="card-header">
-							<div class="d-flex align-items-center">
-								<div>
-									<h6 class="mb-0">{{ __('item.trending') }}</h6>
-								</div>
-							</div>
-						</div>
-						<div class="card-body">
-							<div class="chart-container-2">
-								<canvas id="chart2"></canvas>
-							</div>
-						</div>
-						<ul class="list-group list-group-flush">
-							@foreach($trendingItems as $item)
-								<li
-									class="list-group-item d-flex bg-transparent justify-content-between align-items-center border-top">
-									{{ $item['name'] }}
-									<span
-										class="badge bg-success rounded-pill">{{ $formatNumber->formatQuantity($item['total_quantity']) }}</span>
-								</li>
-							@endforeach
-						</ul>
-					</div>
-				</div>
-			@endcan
-		</div><!--end row-->
 
-		@can('dashboard.can.view.recent.invoices.table')
-			<div class="card radius-10 d-none">
-				<div class="card-header">
-					<div class="d-flex align-items-center">
-						<div>
-							<h6 class="mb-0">{{ __('sale.recent_invoices') }}</h6>
+			@can('dashboard.can.view.recent.invoices.table')
+				<div class="card radius-10 d-none">
+					<div class="card-header">
+						<div class="d-flex align-items-center">
+							<div>
+								<h6 class="mb-0">{{ __('sale.recent_invoices') }}</h6>
+							</div>
+						</div>
+					</div>
+					<div class="card-body">
+						<div class="table-responsive">
+							<table class="table align-middle mb-0">
+								<thead class="table-light">
+									<tr>
+										<th>{{ __('sale.invoice_date') }}</th>
+										<th>{{ __('sale.code') }}</th>
+										<th>{{ __('customer.name') }}</th>
+										<th>{{ __('app.grand_total') }}</th>
+										<th>{{ __('app.balance') }}</th>
+										<th>{{ __('app.status') }}</th>
+									</tr>
+								</thead>
+								<tbody>
+									@foreach($recentInvoices as $recent)
+
+										<tr>
+											<td>{{ $recent->formatted_sale_date }}</td>
+											<td>{{ $recent->sale_code }}</td>
+											<td>{{ $recent->party->getFullName() }}</td>
+											<td class="text-end">{{ $formatNumber->formatWithPrecision($recent->grand_total) }}</td>
+											<td class="text-end">
+												{{ $formatNumber->formatWithPrecision($recent->grand_total - $recent->paid_amount) }}
+											</td>
+
+											@php
+												if ($recent->grand_total == $recent->paid_amount) {
+													$class = 'success';
+													$message = 'Paid';
+												} else if ($recent->grand_total < $recent->paid_amount) {
+													$class = 'warning';
+													$message = 'Partial';
+												} else {
+													$class = 'danger';
+													$message = 'Unpaid';
+												}
+											@endphp
+
+											<td class="text-center">
+												<div
+													class="badge rounded-pill text-{{ $class }} bg-light-{{ $class }} p-2 text-uppercase px-3">
+													{{ $message }}
+												</div>
+											</td>
+										</tr>
+
+									@endforeach
+								</tbody>
+							</table>
 						</div>
 					</div>
 				</div>
-				<div class="card-body">
+			@endcan
+
+			<div class="card">
+				<div class="card-header">
+					<h5>Pending Production by Category</h5>
+				</div>
+				<div class="card-body p-0">
+					<table class="table table-bordered table-hover mb-0">
+						<thead class="table-light">
+							<tr>
+								<th>Category</th>
+								<th>Pending</th>
+								<th>Packing Pending</th>
+								<th>Assigning Pending</th>
+							</tr>
+						</thead>
+						<tbody>
+						<tbody>
+							@foreach($categoryPendingProductions as $category)
+								<tr>
+									<td>{{ $category->name }}</td>
+									<td>
+										<button class="badge bg-danger btn-status" data-category="{{ $category->id }}"
+											data-status="Pending" data-category-name="{{ $category->name }}">
+											{{ $category->pending_count }}
+										</button>
+									</td>
+									<td>
+										<button class="badge bg-warning text-dark btn-status"
+											data-category="{{ $category->id }}" data-status="Packing Pending"
+											data-category-name="{{ $category->name }}">
+											{{ $category->packing_pending_count }}
+										</button>
+									</td>
+									<td>
+										<button class="badge bg-info text-dark btn-status" data-category="{{ $category->id }}"
+											data-status="Assigning Pending" data-category-name="{{ $category->name }}">
+											{{ $category->assigning_pending_count }}
+										</button>
+									</td>
+								</tr>
+							@endforeach
+						</tbody>
+						</tbody>
+					</table>
+				</div>
+			</div>
+
+			<div class="card mt-4">
+				<div class="card-header d-flex align-items-center justify-content-between">
+					<h5 class="mb-0">In-Progress Production</h5>
+					<div class="d-flex gap-2"><span class="badge bg-success">In Progress:
+							{{ $runningMachineCount }}</span><span class="badge bg-danger">Not In Progress:
+							{{ $idleMachineCount }}</span></div>
+				</div>
+				<div class="card-body p-0">
 					<div class="table-responsive">
-						<table class="table align-middle mb-0">
+						<table class="table table-bordered table-hover align-middle mb-0">
 							<thead class="table-light">
 								<tr>
-									<th>{{ __('sale.invoice_date') }}</th>
-									<th>{{ __('sale.code') }}</th>
-									<th>{{ __('customer.name') }}</th>
-									<th>{{ __('app.grand_total') }}</th>
-									<th>{{ __('app.balance') }}</th>
-									<th>{{ __('app.status') }}</th>
+									<th>Work Order ID</th>
+									<th>Production</th>
+									<th>Customer Name</th>
+									<th>Machine</th>
+									<th>Production User</th>
+									<th>Reel / Physical Stock Code</th>
+									<th width="80" class="text-center">Action</th>
 								</tr>
 							</thead>
 							<tbody>
-								@foreach($recentInvoices as $recent)
-
-									<tr>
-										<td>{{ $recent->formatted_sale_date }}</td>
-										<td>{{ $recent->sale_code }}</td>
-										<td>{{ $recent->party->getFullName() }}</td>
-										<td class="text-end">{{ $formatNumber->formatWithPrecision($recent->grand_total) }}</td>
-										<td class="text-end">
-											{{ $formatNumber->formatWithPrecision($recent->grand_total - $recent->paid_amount) }}
+								@forelse($productionMachines as $machine)
+									@php
+										$run = $machine->activeProductionRun;
+										$production = $run?->production;
+										$party = $production?->purchaseOrder?->party;
+									@endphp
+									<tr class="{{ $run ? 'table-success' : 'table-danger' }}">
+										@if($production)
+											<td><button type="button"
+													class="btn btn-link p-0 fw-semibold view-in-progress-production"
+													data-id="{{ $production->id }}">{{ $production->purchaseOrder?->purchase_order_id ?? 'Not Available' }}</button>
+											</td>
+											<td><button type="button"
+													class="btn btn-link p-0 text-start view-in-progress-production"
+													data-id="{{ $production->id }}"><span
+														class="fw-semibold">#{{ $production->id }}</span><small
+														class="d-block text-muted">{{ $production->item?->name ?? 'Not Available' }}</small></button>
+											</td>
+											<td>{{ trim(($party?->first_name ?? '') . ' ' . ($party?->last_name ?? '')) ?: 'Not Available' }}
+											</td>
+										@else
+											<td>—</td>
+											<td>—</td>
+											<td>—</td>
+										@endif
+										<td><strong>{{ $machine->machine_name }}</strong><span
+												class="badge d-block mt-1 bg-{{ $run ? 'success' : 'danger' }}">{{ $run ? 'In Progress' : 'Not In Progress' }}</span>
 										</td>
-
-										@php
-											if ($recent->grand_total == $recent->paid_amount) {
-												$class = 'success';
-												$message = 'Paid';
-											} else if ($recent->grand_total < $recent->paid_amount) {
-												$class = 'warning';
-												$message = 'Partial';
-											} else {
-												$class = 'danger';
-												$message = 'Unpaid';
-											}
-										@endphp
-
-										<td class="text-center">
-											<div
-												class="badge rounded-pill text-{{ $class }} bg-light-{{ $class }} p-2 text-uppercase px-3">
-												{{ $message }}
-											</div>
+										<td>{{ $run?->productionUser?->full_name ?? '—' }}</td>
+										<td>
+											@if($run)
+												<span
+													class="badge bg-info text-dark">{{ $run->reelStock?->reel?->code ?? 'Not Available' }}</span>
+												<small
+													class="d-block text-muted mt-1">{{ $run->reelStock?->stock_code ?? 'Not Available' }}</small>
+											@else
+												—
+											@endif
+										</td>
+										<td class="text-center">@if($production)<button type="button"
+											class="btn btn-sm btn-outline-primary view-in-progress-production"
+											data-id="{{ $production->id }}" title="View"><i
+										class="bx bx-show"></i></button>@else — @endif
 										</td>
 									</tr>
-
-								@endforeach
+								@empty
+									<tr>
+										<td colspan="7" class="text-center text-muted py-4">No machines found.</td>
+									</tr>
+								@endforelse
 							</tbody>
 						</table>
 					</div>
 				</div>
 			</div>
-		@endcan
 
-		<div class="card">
-			<div class="card-header">
-				<h5>Pending Production by Category</h5>
-			</div>
-			<div class="card-body p-0">
-				<table class="table table-bordered table-hover mb-0">
-					<thead class="table-light">
-						<tr>
-							<th>Category</th>
-							<th>Pending</th>
-							<th>Packing Pending</th>
-							<th>Assigning Pending</th>
-						</tr>
-					</thead>
-					<tbody>
-					<tbody>
-						@foreach($categoryPendingProductions as $category)
-							<tr>
-								<td>{{ $category->name }}</td>
-								<td>
-									<button class="badge bg-danger btn-status" data-category="{{ $category->id }}"
-										data-status="Pending" data-category-name="{{ $category->name }}">
-										{{ $category->pending_count }}
-									</button>
-								</td>
-								<td>
-									<button class="badge bg-warning text-dark btn-status"
-										data-category="{{ $category->id }}" data-status="Packing Pending"
-										data-category-name="{{ $category->name }}">
-										{{ $category->packing_pending_count }}
-									</button>
-								</td>
-								<td>
-									<button class="badge bg-info text-dark btn-status" data-category="{{ $category->id }}"
-										data-status="Assigning Pending" data-category-name="{{ $category->name }}">
-										{{ $category->assigning_pending_count }}
-									</button>
-								</td>
-							</tr>
-						@endforeach
-					</tbody>
-					</tbody>
-				</table>
-			</div>
+
+
 		</div>
+	</div>
 
-		<div class="card mt-4">
-			<div class="card-header d-flex align-items-center justify-content-between">
-				<h5 class="mb-0">In-Progress Production</h5>
-				<span class="badge bg-primary">{{ $inProgressProductions->count() }}</span>
-			</div>
-			<div class="card-body p-0">
-				<div class="table-responsive">
-					<table class="table table-bordered table-hover align-middle mb-0">
+	<div class="modal fade" id="itemsModal" tabindex="-1" aria-labelledby="itemsModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-xl">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="itemsModalLabel">Items List</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body" style="max-height: 600px; overflow-y: auto;">
+					<table class="table table-bordered mb-0" id="itemsTable">
 						<thead class="table-light">
 							<tr>
-								<th>Work Order ID</th>
-								<th>Production</th>
-								<th>Customer Name</th>
-								<th>Machine</th>
-								<th>Production User</th>
-								<th>Reel / Physical Stock Code</th>
-								<th width="80" class="text-center">Action</th>
+								<th>SL No</th>
+								<th>Customer</th>
+								<th>Item Name</th>
+								<th>Brand</th>
+								<th>Quantity</th>
+								<th>Action</th>
 							</tr>
 						</thead>
 						<tbody>
-							@forelse($inProgressProductions as $production)
-							@php($party = $production->purchaseOrder?->party)
-							<tr>
-								<td><button type="button"
-										class="btn btn-link p-0 fw-semibold view-in-progress-production"
-										data-id="{{ $production->id }}">{{ $production->purchaseOrder?->purchase_order_id ?? 'Not Available' }}</button>
-								</td>
-								<td><button type="button"
-										class="btn btn-link p-0 text-start view-in-progress-production"
-										data-id="{{ $production->id }}"><span
-											class="fw-semibold">#{{ $production->id }}</span><small
-											class="d-block text-muted">{{ $production->item?->name ?? 'Not Available' }}</small></button>
-								</td>
-								<td>{{ trim(($party?->first_name ?? '') . ' ' . ($party?->last_name ?? '')) ?: 'Not Available' }}
-								</td>
-								<td>{{ $production->activeRun?->machine?->machine_name ?? 'Not Available' }}</td>
-								<td>{{ $production->activeRun?->productionUser?->full_name ?? 'Not Available' }}</td>
-								<td>
-									<span
-										class="badge bg-info text-dark">{{ $production->activeRun?->reelStock?->reel?->code ?? 'Not Available' }}</span>
-									<small
-										class="d-block text-muted mt-1">{{ $production->activeRun?->reelStock?->stock_code ?? 'Not Available' }}</small>
-								</td>
-								<td class="text-center"><button type="button"
-										class="btn btn-sm btn-outline-primary view-in-progress-production"
-										data-id="{{ $production->id }}" title="View"><i class="bx bx-show"></i></button>
-								</td>
-							</tr>
-							@empty
-							<tr>
-								<td colspan="7" class="text-center text-muted py-4">No production is currently in
-									progress.</td>
-							</tr>
-							@endforelse
+							<!-- Ajax content will load here -->
 						</tbody>
 					</table>
 				</div>
 			</div>
 		</div>
-
-
-
 	</div>
-</div>
 
-<div class="modal fade" id="itemsModal" tabindex="-1" aria-labelledby="itemsModalLabel" aria-hidden="true">
-	<div class="modal-dialog modal-xl">
-		<div class="modal-content">
-			<div class="modal-header">
-				<h5 class="modal-title" id="itemsModalLabel">Items List</h5>
-				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-			</div>
-			<div class="modal-body" style="max-height: 600px; overflow-y: auto;">
-				<table class="table table-bordered mb-0" id="itemsTable">
-					<thead class="table-light">
-						<tr>
-							<th>SL No</th>
-							<th>Customer</th>
-							<th>Item Name</th>
-							<th>Brand</th>
-							<th>Quantity</th>
-							<th>Action</th>
-						</tr>
-					</thead>
-					<tbody>
-						<!-- Ajax content will load here -->
-					</tbody>
-				</table>
+	<div class="modal fade" id="inProgressProductionModal" tabindex="-1" aria-hidden="true">
+		<div class="modal-dialog modal-xl modal-dialog-centered">
+			<div class="modal-content">
+				<div class="modal-header bg-primary text-white">
+					<h5 class="modal-title text-white">In-Progress Production Details</h5>
+					<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+						aria-label="Close"></button>
+				</div>
+				<div class="modal-body" id="inProgressProductionBody"></div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+					<a href="#" class="btn btn-primary" id="trackInProgressProduction">Go to Production</a>
+				</div>
 			</div>
 		</div>
 	</div>
-</div>
-
-<div class="modal fade" id="inProgressProductionModal" tabindex="-1" aria-hidden="true">
-	<div class="modal-dialog modal-xl modal-dialog-centered">
-		<div class="modal-content">
-			<div class="modal-header bg-primary text-white">
-				<h5 class="modal-title text-white">In-Progress Production Details</h5>
-				<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-					aria-label="Close"></button>
-			</div>
-			<div class="modal-body" id="inProgressProductionBody"></div>
-			<div class="modal-footer">
-				<button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
-				<a href="#" class="btn btn-primary" id="trackInProgressProduction">Go to Production</a>
-			</div>
-		</div>
-	</div>
-</div>
-<!--end page wrapper -->
+	<!--end page wrapper -->
 @endsection
 
 @section('js')

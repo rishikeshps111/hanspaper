@@ -942,6 +942,51 @@ class ProductionItemMasterController extends Controller
         }
     }
 
+    public function correctProduction(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'production_id' => ['required', 'integer'], 'production_run_id' => ['required', 'integer'],
+            'packed_by' => ['required', 'exists:employees,id'], 'machines' => ['required', 'exists:machines,id'],
+            'reel_stock_id' => ['required', 'exists:reel_stocks,id'], 'core_id' => ['required', 'exists:cores,id'],
+            'output_roll_width' => ['required', 'numeric', 'min:0.001'], 'roll_length' => ['required', 'numeric', 'min:0.001'],
+            'correction_reason' => ['nullable', 'string', 'max:1000'],
+        ]);
+        DB::transaction(function () use ($data) {
+            $production = ProductionItemMaster::lockForUpdate()->findOrFail($data['production_id']);
+            $run = ProductionRun::where('production_id', $production->id)->lockForUpdate()->findOrFail($data['production_run_id']);
+            if ($run->status !== 'in_progress' || $production->status !== 'In Progress') {
+                throw ValidationException::withMessages(['production_run_id' => 'Only an in-progress run can be corrected.']);
+            }
+            $stock = ReelStock::with('reel')->lockForUpdate()->findOrFail($data['reel_stock_id']);
+            $machine = Machine::lockForUpdate()->findOrFail($data['machines']);
+            $core = Core::lockForUpdate()->findOrFail($data['core_id']);
+            if (!$stock->is_active || !in_array($stock->status, ['full', 'bit']) || $stock->balance_length <= 0) {
+                throw ValidationException::withMessages(['reel_stock_id' => 'Choose an available Full or Bit reel.']);
+            }
+            if ($machine->status !== 'Active') throw ValidationException::withMessages(['machines' => 'Choose an active machine.']);
+            if (!$core->is_active || $core->quantity < 1) throw ValidationException::withMessages(['core_id' => 'Choose a core with available stock.']);
+            if (ProductionRun::where('status', 'in_progress')->where('id', '!=', $run->id)
+                ->where(fn ($q) => $q->where('machine_id', $machine->id)->orWhere('reel_stock_id', $stock->id))->exists()) {
+                throw ValidationException::withMessages(['reel_stock_id' => 'The selected machine or reel is already in use.']);
+            }
+            $width = round((float) $data['output_roll_width'], 3);
+            $length = round((float) $data['roll_length'], 3);
+            if ($width > (float) $stock->reel->width) throw ValidationException::withMessages(['output_roll_width' => 'Output width must fit the reel width.']);
+            $splits = max(1, (int) floor((float) $stock->reel->width / $width));
+            if ($length > $stock->actualBalanceLength() * $splits) throw ValidationException::withMessages(['roll_length' => 'Roll length exceeds available capacity.']);
+            $changes = ['reel_stock_id' => $stock->id, 'machine_id' => $machine->id, 'production_user_id' => $data['packed_by'],
+                'core_id' => $core->id, 'output_roll_width' => $width, 'roll_length' => $length, 'source_reel_status' => $stock->status];
+            $history = json_decode($run->getRawOriginal('correction_history') ?: '[]', true);
+            $history[] = ['before' => $run->only(array_keys($changes)), 'after' => $changes,
+                'reason' => $data['correction_reason'] ?? null, 'changed_by' => auth()->id(), 'changed_at' => now()->toIso8601String()];
+            $run->fill($changes);
+            $run->correction_history = json_encode($history);
+            $run->save();
+            $production->update(['assigned_machine_id' => $machine->id, 'assigned_production_user_id' => $data['packed_by']]);
+        });
+        return response()->json(['message' => 'Production entry corrected successfully.', 'redirect' => route('item.production.edit', $data['production_id'])]);
+    }
+
     private function storeProductionWithReelStock(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
