@@ -676,7 +676,8 @@
                     code: this.dataset.code,
                     reelCode: this.dataset.reelCode,
                     provider: this.dataset.provider,
-                    addedDate: this.dataset.addedDate
+                    addedDate: this.dataset.addedDate,
+                    actualBalanceLength: this.dataset.actualBalanceLength
                 });
                 else selectedDashboardStocks.delete(id);
                 updateDashboardStockActions();
@@ -691,7 +692,8 @@
                         code: box.dataset.code,
                         reelCode: box.dataset.reelCode,
                         provider: box.dataset.provider,
-                        addedDate: box.dataset.addedDate
+                        addedDate: box.dataset.addedDate,
+                        actualBalanceLength: box.dataset.actualBalanceLength
                     });
                     else selectedDashboardStocks.delete(id);
                 });
@@ -714,11 +716,11 @@
                 const escapeHtml = value => $('<div>').text(value || '—').html();
                 const labels = stocks.flatMap(stock => [stock, stock]);
                 const canvases = labels.map((stock, index) =>
-                    `<div class="label"><div class="date">${escapeHtml(stock.addedDate)}</div><canvas id="barcode-${index}"></canvas><div class="stock">${escapeHtml(stock.code)}</div><div class="detail">${escapeHtml(stock.reelCode)}</div><div class="detail">${escapeHtml(stock.provider)}</div></div>`
+                    `<div class="label"><div class="date">${escapeHtml(stock.addedDate)}</div><canvas id="barcode-${index}"></canvas><div class="stock">${escapeHtml(stock.code)}</div><div class="detail">${escapeHtml(stock.reelCode)}</div><div class="detail">${escapeHtml(stock.provider)}</div>${stock.status === 'bit' ? `<div class="bit-badge">BIT REEL</div><div class="bit-length">Remaining : ${escapeHtml(stock.actualBalanceLength)} m</div>` : ''}</div>`
                 ).join('');
                 const data = JSON.stringify(labels).replace(/</g, '\\u003c');
                 printWindow.document.write(
-                    `<!doctype html><html><head><title>Reel Barcodes</title><style>@page{margin:5mm}*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif}.labels{display:flex;flex-wrap:wrap;gap:4mm}.label{width:90mm;min-height:55mm;padding:2.5mm;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;page-break-inside:avoid;overflow:hidden}.date{font-size:14px;font-weight:700;margin-bottom:2mm}.label canvas{width:70mm!important;height:20mm!important;max-width:100%;margin-bottom:1mm}.stock{font-size:18px;font-weight:600;line-height:1.15}.detail{width:100%;font-size:15px;font-weight:700;line-height:1.2;overflow-wrap:anywhere}</style></head><body><div class="labels">${canvases}</div><script src="{{ asset('custom/libraries/barcode-lib/bwip-js-min.js') }}"><\/script><script>const stocks=${data};stocks.forEach((stock,index)=>bwipjs.toCanvas('barcode-'+index,{bcid:'code128',text:stock.code,scale:3,height:12,includetext:false,paddingwidth:0,paddingheight:0}));setTimeout(()=>window.print(),300);<\/script></body></html>`
+                    `<!doctype html><html><head><title>Reel Barcodes</title><style>@page{margin:5mm}*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif}.labels{display:flex;flex-wrap:wrap;gap:4mm}.label{width:90mm;min-height:55mm;padding:2.5mm;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;page-break-inside:avoid;overflow:hidden}.date{font-size:14px;font-weight:700;margin-bottom:2mm}.label canvas{width:70mm!important;height:20mm!important;max-width:100%;margin-bottom:1mm}.stock{font-size:18px;font-weight:600;line-height:1.15}.detail{width:100%;font-size:15px;font-weight:700;line-height:1.2;overflow-wrap:anywhere}.bit-badge{margin-top:2mm;font-size:14px;font-weight:700}.bit-length{margin-top:1mm;font-size:16px;font-weight:600}</style></head><body><div class="labels">${canvases}</div><script src="{{ asset('custom/libraries/barcode-lib/bwip-js-min.js') }}"><\/script><script>const stocks=${data};stocks.forEach((stock,index)=>bwipjs.toCanvas('barcode-'+index,{bcid:'code128',text:stock.code,scale:3,height:12,includetext:false,paddingwidth:0,paddingheight:0}));setTimeout(()=>window.print(),300);<\/script></body></html>`
                 );
                 printWindow.document.close();
             };
@@ -728,7 +730,9 @@
                     code: this.dataset.code,
                     reelCode: this.dataset.reelCode,
                     provider: this.dataset.provider,
-                    addedDate: this.dataset.addedDate
+                    addedDate: this.dataset.addedDate,
+                    status: this.dataset.status,
+                    actualBalanceLength: this.dataset.actualBalanceLength
                 }]);
             });
             $('#dashboardPrintSelected').on('click', () => printDashboardBarcodes(Array.from(selectedDashboardStocks

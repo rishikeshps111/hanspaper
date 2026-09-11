@@ -739,6 +739,42 @@
             });
             applyStoredCutWidth();
 
+            const printProductionBitReelSticker = stock => {
+                const printWindow = window.open('', '_blank');
+                if (!printWindow) {
+                    Swal.fire('Popup Blocked', 'Please allow popups to print the reel sticker.', 'warning');
+                    return false;
+                }
+                const escapeHtml = value => $('<div>').text(value || '—').html();
+                const labels = [stock, stock];
+                const labelHtml = labels.map((item, index) =>
+                    `<div class="label"><div class="date">${escapeHtml(item.stock_added_date)}</div><canvas id="barcode-${index}"></canvas><div class="stock">${escapeHtml(item.stock_code)}</div><div class="detail">${escapeHtml(item.reel_code)}</div><div class="detail">${escapeHtml(item.provider)}</div><div class="bit-badge">BIT REEL</div><div class="bit-length">Remaining : ${escapeHtml(item.actual_balance_length)} m</div></div>`
+                ).join('');
+                const data = JSON.stringify(labels).replace(/</g, '\\u003c');
+                printWindow.document.write(
+                    `<!doctype html><html><head><title>Bit Reel Sticker</title><style>@page{margin:5mm}*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif}.labels{display:flex;flex-wrap:wrap;gap:4mm}.label{width:90mm;min-height:55mm;padding:2.5mm;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;page-break-inside:avoid;overflow:hidden}.date{font-size:14px;font-weight:700;margin-bottom:2mm}.label canvas{width:70mm!important;height:20mm!important;max-width:100%;margin-bottom:1mm}.stock{font-size:18px;font-weight:600;line-height:1.15}.detail{width:100%;font-size:15px;font-weight:700;line-height:1.2;overflow-wrap:anywhere}.bit-badge{margin-top:2mm;font-size:14px;font-weight:700}.bit-length{margin-top:1mm;font-size:16px;font-weight:600}</style></head><body><div class="labels">${labelHtml}</div><script src="{{ asset('custom/libraries/barcode-lib/bwip-js-min.js') }}"><\/script><script>const stocks=${data};stocks.forEach((item,index)=>bwipjs.toCanvas('barcode-'+index,{bcid:'code128',text:item.stock_code,scale:3,height:12,includetext:false,paddingwidth:0,paddingheight:0}));setTimeout(()=>window.print(),300);<\/script></body></html>`
+                );
+                printWindow.document.close();
+                return true;
+            };
+
+            const showBitReelPrintPrompt = response => {
+                const stock = response.bit_reel_label;
+                return Swal.fire({
+                    icon: 'success',
+                    title: 'Bit Reel Ready',
+                    html: `<div class="mb-2"><strong>${$('<div>').text(stock.stock_code).html()}</strong></div><span class="badge bg-warning text-dark mb-2">BIT REEL</span><div>Actual Balance Length: <strong>${$('<div>').text(stock.actual_balance_length).html()} m</strong></div>`,
+                    showCancelButton: true,
+                    confirmButtonText: '<i class="bx bx-barcode me-1"></i> Print Sticker',
+                    cancelButtonText: 'Close',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false
+                }).then(result => {
+                    if (result.isConfirmed) printProductionBitReelSticker(stock);
+                    if (response.redirect) window.location.href = response.redirect;
+                });
+            };
+
             $('#productionForm').off('submit').on('submit', function (event) {
                 event.preventDefault();
                 const form = $(this);
@@ -785,7 +821,11 @@
                         } else {
                             Swal.fire('Success', response.message, 'success');
                         }
-                        if (response.redirect) window.location.href = response.redirect;
+                        if (response.bit_reel_label) {
+                            showBitReelPrintPrompt(response);
+                        } else if (response.redirect) {
+                            window.location.href = response.redirect;
+                        }
                     },
                     error: function (xhr) {
                         form.data('update-confirmed', false);

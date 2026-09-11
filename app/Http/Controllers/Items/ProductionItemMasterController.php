@@ -957,7 +957,7 @@ class ProductionItemMasterController extends Controller
         }
 
         try {
-            DB::transaction(function () use ($request) {
+            $bitReelLabel = DB::transaction(function () use ($request) {
                 $production = ProductionItemMaster::lockForUpdate()->findOrFail($request->integer('production_id'));
                 $run = ProductionRun::lockForUpdate()->findOrFail($request->integer('production_run_id'));
                 if ($run->production_id !== $production->id || $run->status !== 'in_progress' || $run->active_key !== 1) {
@@ -1141,12 +1141,27 @@ class ProductionItemMasterController extends Controller
                     $generalQuantity->increment('quantity', $excessStockQuantity);
                     $generalQuantity->increment('avaquantity', $excessStockQuantity);
                 }
+
+                if ($resultingStatus !== 'bit') {
+                    return null;
+                }
+
+                $stock->loadMissing(['reel', 'provider']);
+                return [
+                    'stock_code' => $stock->stock_code,
+                    'reel_code' => $stock->reel?->code ?? '—',
+                    'provider' => $stock->provider?->name ?? '—',
+                    'stock_added_date' => $stock->created_at?->format('d M Y h:i a') ?? '—',
+                    'status' => 'bit',
+                    'actual_balance_length' => number_format($stock->actualBalanceLength(), 2, '.', ''),
+                ];
             });
 
             return response()->json([
                 'status' => true,
                 'message' => 'Production updated successfully. Reel, core, wastage, and excess stock were recorded.',
                 'redirect' => route('item.production.edit', ['id' => $request->production_id]),
+                'bit_reel_label' => $bitReelLabel,
             ]);
         } catch (ValidationException $exception) {
             throw $exception;

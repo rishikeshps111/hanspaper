@@ -2,11 +2,11 @@
 
 namespace App\Models\Reels;
 
+use App\Models\ProductionRun;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Models\ProductionRun;
-use Illuminate\Database\Eloquent\Builder;
 
 class ReelStock extends Model
 {
@@ -40,33 +40,61 @@ class ReelStock extends Model
             $model->created_by = auth()->id();
             $model->updated_by = auth()->id();
         });
-        static::updating(fn($model) => $model->updated_by = auth()->id());
+        static::updating(fn ($model) => $model->updated_by = auth()->id());
     }
 
     public function reel(): BelongsTo
     {
         return $this->belongsTo(Reel::class);
     }
+
     public function provider(): BelongsTo
     {
         return $this->belongsTo(ReelProvider::class, 'reel_provider_id');
     }
+
     public function warehouse(): BelongsTo
     {
         return $this->belongsTo(ReelWarehouse::class, 'reel_warehouse_id');
     }
+
     public function movements(): HasMany
     {
         return $this->hasMany(ReelStockMovement::class);
     }
+
     public function saleItems(): HasMany
     {
         return $this->hasMany(ReelSaleItem::class);
     }
+
     public function usages(): HasMany
     {
         return $this->hasMany(ReelStockUsage::class);
     }
-    public function productionRuns(): HasMany { return $this->hasMany(ProductionRun::class); }
-    public function activeProductionRun() { return $this->hasOne(ProductionRun::class)->where('status', 'in_progress'); }
+
+    public function actualBalanceLength(): float
+    {
+        $balance = (float) $this->balance_length;
+        $cutWidth = (float) ($this->cut_width ?? 0);
+        $sourceWidth = (float) ($this->reel?->width ?? 0);
+
+        if ($this->status !== 'bit' || $cutWidth <= 0 || $sourceWidth <= 0) {
+            return $balance;
+        }
+
+        $widthSplits = max(1, (int) floor($sourceWidth / $cutWidth));
+
+        return round($balance / $widthSplits, 3);
+    }
+
+    public function productionRuns(): HasMany
+    {
+        return $this->hasMany(ProductionRun::class);
+    }
+
+    public function activeProductionRun()
+    {
+        return $this->hasOne(ProductionRun::class)->where('status', 'in_progress');
+    }
 }

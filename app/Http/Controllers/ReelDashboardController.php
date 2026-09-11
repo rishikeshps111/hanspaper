@@ -102,7 +102,7 @@ class ReelDashboardController extends Controller
     public function stocks(Request $request, Reel $reel): JsonResponse
     {
         $query = ReelStock::query()
-            ->with(['provider:id,name', 'warehouse:id,name'])
+            ->with(['provider:id,name', 'warehouse:id,name', 'reel:id,width'])
             ->where('reel_id', $reel->id)
             ->where('is_active', true)
             ->whereIn('status', ['full', 'bit'])
@@ -119,6 +119,7 @@ class ReelDashboardController extends Controller
                 $stock->id . '" data-status="' . e($stock->status) . '" data-price="' . e($reel->selling_price) .
                 '" data-code="' . e($stock->stock_code) . '" data-actual-code="' . e($stock->actual_code ?? '') .
                 '" data-reel-code="' . e($reel->code) . '" data-provider="' . e($stock->provider?->name ?? '—') .
+                '" data-actual-balance-length="' . e(number_format($stock->actualBalanceLength(), 2, '.', '')) .
                 '" data-added-date="' . e($stock->created_at?->format('d M Y h:i a') ?? '—') . '">')
             ->editColumn('actual_code', fn (ReelStock $stock) => $stock->actual_code ?: '—')
             ->addColumn('provider_name', fn (ReelStock $stock) => $stock->provider?->name ?? '—')
@@ -129,6 +130,7 @@ class ReelDashboardController extends Controller
                 $stock->id . '" data-code="' . e($stock->actual_code ?? '') . '" title="Edit Actual Code"><i class="bx bx-edit"></i></button>' .
                 '<button type="button" class="btn btn-sm btn-outline-dark dashboard-stock-action print-dashboard-stock" data-code="' . e($stock->stock_code) .
                 '" data-reel-code="' . e($reel->code) . '" data-provider="' . e($stock->provider?->name ?? '—') .
+                '" data-status="' . e($stock->status) . '" data-actual-balance-length="' . e(number_format($stock->actualBalanceLength(), 2, '.', '')) .
                 '" data-added-date="' . e($stock->created_at?->format('d M Y h:i a') ?? '—') .
                 '" title="Print Barcode"><i class="bx bx-barcode"></i></button></div>')
             ->rawColumns(['select', 'action'])->toJson();
