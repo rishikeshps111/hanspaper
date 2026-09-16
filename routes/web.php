@@ -53,6 +53,7 @@ use App\Http\Controllers\Items\ItemController;
 use App\Http\Controllers\Items\ItemTransactionController;
 use App\Http\Controllers\Items\ItemCategoryController;
 use App\Http\Controllers\Items\ProductionItemMasterController;
+use App\Http\Controllers\Items\ProductionExportController;
 
 use App\Http\Controllers\UnitController;
 use App\Http\Controllers\ImportController;
@@ -1119,6 +1120,7 @@ Route::middleware('auth')->group(function () {
                 Route::get('/list', [ProductionItemMasterController::class, 'list'])
                         ->name('item.production.list');
                 Route::get('/datatable-list', [ProductionItemMasterController::class, 'datatableList'])->name('production.datatable.list'); //Datatable List
+                Route::post('/export', [ProductionExportController::class, 'download'])->name('production.export');
                 Route::get('/uniquecustomers', [ProductionItemMasterController::class, 'uniqueCustomers'])->name('production.unique.customers');
 
                 Route::get('/view/{status}', [ProductionItemMasterController::class, 'FilterList'])->name('production.filterlist');

@@ -11,7 +11,6 @@ $(function () {
      * Initialize DataTable with server-side processing
      */
     function initializeDataTable() {
-        var exportColumns = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 
 
 
@@ -27,7 +26,7 @@ $(function () {
                 url: baseURL + '/production/datatable-list',
             },
             columns: getColumnDefinitions(),
-            dom: "<'row'<'col-sm-12'<'float-start' l><'float-end' fr><'float-end ms-2'<'card-body ' B>>>" +
+            dom: "<'row'<'col-sm-12'<'float-start' l><'float-end' fr>>>" +
                 "<'row'<'col-sm-12'tr>>" +
                 "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
             lengthMenu: [
@@ -41,7 +40,6 @@ $(function () {
 
             },
             pagingType: "full_numbers",
-            buttons: getTableButtons(exportColumns),
             order: [[0, 'desc']],
             initComplete: function () {
 

@@ -4,20 +4,20 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ReelStockRequest;
 use App\Models\Reels\Reel;
+use App\Models\Reels\ReelBrand;
+use App\Models\Reels\ReelGsm;
+use App\Models\Reels\ReelProvider;
 use App\Models\Reels\ReelStock;
 use App\Models\Reels\ReelStockMovement;
-use App\Models\Reels\ReelWarehouse;
-use App\Models\Reels\ReelBrand;
-use App\Models\Reels\ReelProvider;
 use App\Models\Reels\ReelType;
-use App\Models\Reels\ReelGsm;
+use App\Models\Reels\ReelWarehouse;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Illuminate\View\View;
 use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
 use Yajra\DataTables\Facades\DataTables;
 
 class ReelStockController extends Controller
@@ -39,7 +39,9 @@ class ReelStockController extends Controller
         $query = ReelStock::with(['reel.brand', 'reel.type', 'reel.gsm', 'provider', 'warehouse'])
             ->select('reel_stocks.*')->orderByDesc('reel_stocks.created_at');
         foreach (['reel_id', 'reel_warehouse_id', 'status'] as $filter) {
-            if ($request->filled($filter)) $query->where($filter, $request->input($filter));
+            if ($request->filled($filter)) {
+                $query->where($filter, $request->input($filter));
+            }
         }
         if ($request->filled('reel_provider_id')) {
             $query->where('reel_provider_id', $request->integer('reel_provider_id'));
@@ -61,9 +63,8 @@ class ReelStockController extends Controller
                 $row->reel?->type?->short_name ?: $row->reel?->type?->name,
                 $row->reel?->gsm?->gsm,
             ])))
-            ->addColumn('action', fn ($row) =>
-                '<a class="btn btn-sm btn-outline-info" href="' . route('reels.stock.show', $row) . '"><i class="bx bx-show"></i></a>
-                 <a class="btn btn-sm btn-outline-primary" href="' . route('reels.stock.edit', $row) . '"><i class="bx bx-edit"></i></a>')
+            ->addColumn('action', fn ($row) => '<a class="btn btn-sm btn-outline-info" href="'.route('reels.stock.show', $row).'"><i class="bx bx-show"></i></a>
+                 <a class="btn btn-sm btn-outline-primary" href="'.route('reels.stock.edit', $row).'"><i class="bx bx-edit"></i></a>')
             ->rawColumns(['action'])->toJson();
     }
 
@@ -89,6 +90,7 @@ class ReelStockController extends Controller
                 'remarks' => 'Opening stock', 'created_by' => auth()->id(), 'created_at' => now(),
             ]);
         });
+
         return redirect()->route('reels.stock.index')->with('success', 'Reel stock created successfully.');
     }
 
@@ -139,7 +141,7 @@ class ReelStockController extends Controller
         });
 
         return response()->json([
-            'message' => count($createdCodes) . ' reel stock record(s) added successfully.',
+            'message' => count($createdCodes).' reel stock record(s) added successfully.',
             'codes' => $createdCodes,
         ]);
     }
@@ -171,33 +173,31 @@ class ReelStockController extends Controller
             $query->where('reel_warehouse_id', $request->integer('reel_warehouse_id'));
         }
         if ($request->filled('actual_code')) {
-            $query->where('actual_code', 'like', '%' . $request->input('actual_code') . '%');
+            $query->where('actual_code', 'like', '%'.$request->input('actual_code').'%');
         }
 
         return DataTables::eloquent($query)
             ->addIndexColumn()
-            ->addColumn('select', fn (ReelStock $stock) =>
-                '<input type="checkbox" class="form-check-input stock-checkbox" data-id="' . $stock->id .
-                '" data-code="' . e($stock->stock_code) .
-                '" data-reel-code="' . e($stock->reel?->code ?? '') .
-                '" data-provider="' . e($stock->provider?->name ?? '—') .
-                '" data-added-date="' . e($stock->created_at?->format('d M Y h:i a') ?? '—') . '">')
+            ->addColumn('select', fn (ReelStock $stock) => '<input type="checkbox" class="form-check-input stock-checkbox" data-id="'.$stock->id.
+                '" data-code="'.e($stock->stock_code).
+                '" data-reel-code="'.e($stock->reel?->code ?? '').
+                '" data-provider="'.e($stock->provider?->name ?? '—').
+                '" data-added-date="'.e($stock->created_at?->format('d M Y h:i a') ?? '—').'">')
             ->addColumn('warehouse_name', fn (ReelStock $stock) => $stock->warehouse?->name ?? '—')
             ->addColumn('provider_name', fn (ReelStock $stock) => $stock->provider?->name ?? '—')
             ->editColumn('created_at', fn (ReelStock $stock) => $stock->created_at?->format('d M Y h:i a') ?? '—')
             ->editColumn('actual_code', fn (ReelStock $stock) => $stock->actual_code ?: '—')
-            ->addColumn('action', fn (ReelStock $stock) =>
-                (in_array($stock->status, ['bit', 'finished'], true)
-                    ? '<a class="btn btn-sm btn-outline-info" href="' . route('reels.stock.usage', $stock) .
-                        '" title="Production Usage"><i class="bx bx-history"></i> ' . $stock->usages_count . '</a> '
-                    : '') .
-                '<button type="button" class="btn btn-sm btn-outline-primary edit-actual-code" data-id="' . $stock->id .
-                '" data-code="' . e($stock->actual_code ?? '') . '" data-stock-code="' . e($stock->stock_code) .
+            ->addColumn('action', fn (ReelStock $stock) => (in_array($stock->status, ['bit', 'finished'], true)
+                    ? '<a class="btn btn-sm btn-outline-info" href="'.route('reels.stock.usage', $stock).
+                        '" title="Production Usage"><i class="bx bx-history"></i> '.$stock->usages_count.'</a> '
+                    : '').
+                '<button type="button" class="btn btn-sm btn-outline-primary edit-actual-code" data-id="'.$stock->id.
+                '" data-code="'.e($stock->actual_code ?? '').'" data-stock-code="'.e($stock->stock_code).
                 '" title="Add/Edit Actual Code"><i class="bx bx-edit"></i></button>
-                 <button type="button" class="btn btn-sm btn-outline-dark print-stock-barcode" data-code="' .
-                e($stock->stock_code) . '" data-reel-code="' . e($stock->reel?->code ?? '') .
-                '" data-provider="' . e($stock->provider?->name ?? '—') .
-                '" data-added-date="' . e($stock->created_at?->format('d M Y h:i a') ?? '—') .
+                 <button type="button" class="btn btn-sm btn-outline-dark print-stock-barcode" data-code="'.
+                e($stock->stock_code).'" data-reel-code="'.e($stock->reel?->code ?? '').
+                '" data-provider="'.e($stock->provider?->name ?? '—').
+                '" data-added-date="'.e($stock->created_at?->format('d M Y h:i a') ?? '—').
                 '" title="Print Barcode"><i class="bx bx-barcode"></i></button>')
             ->rawColumns(['select', 'action'])
             ->toJson();
@@ -258,7 +258,9 @@ class ReelStockController extends Controller
             $stocks = collect();
             $batchUuid = (string) Str::uuid();
             foreach (['full' => (int) $validated['full_quantity'], 'bit' => (int) $validated['bit_quantity']] as $status => $quantity) {
-                if ($quantity === 0) continue;
+                if ($quantity === 0) {
+                    continue;
+                }
                 $selected = ReelStock::where('reel_id', $reel->id)
                     ->when($validated['reel_provider_id'] ?? null, fn ($query, $providerId) => $query->where('reel_provider_id', $providerId))
                     ->where('reel_warehouse_id', $source->id)
@@ -307,6 +309,7 @@ class ReelStockController extends Controller
     public function edit(ReelStock $stock): View
     {
         abort_if($stock->movements()->where('transaction_type', '!=', 'opening')->exists(), 422, 'Stock with transactions cannot be edited.');
+
         return view('reels.stock.edit', array_merge($this->formData(false), compact('stock')));
     }
 
@@ -323,12 +326,14 @@ class ReelStockController extends Controller
                 'reel_provider_id' => $data['reel_provider_id'],
             ]);
         });
+
         return redirect()->route('reels.stock.index')->with('success', 'Reel stock updated successfully.');
     }
 
     public function show(ReelStock $stock): View
     {
         $stock->load(['reel.brand', 'reel.type', 'reel.gsm', 'provider', 'warehouse', 'movements.provider']);
+
         return view('reels.stock.show', compact('stock'));
     }
 
@@ -339,6 +344,7 @@ class ReelStockController extends Controller
             'reel', 'warehouse',
             'usages' => fn ($query) => $query->with(['production.item', 'machine'])->orderBy('created_at')->orderBy('id'),
         ]);
+
         return view('reels.stock.usage', compact('stock'));
     }
 
@@ -353,10 +359,11 @@ class ReelStockController extends Controller
 
     private function nextStockCode(): string
     {
-        $last = (int) ReelStock::query()
+        $last = (int) ReelStock::withoutGlobalScope('not_voided')
             ->whereRaw("stock_code REGEXP '^[0-9]+$'")
             ->lockForUpdate()
             ->max(DB::raw('CAST(stock_code AS UNSIGNED)'));
+
         return str_pad((string) ($last + 1), 6, '0', STR_PAD_LEFT);
     }
 }
