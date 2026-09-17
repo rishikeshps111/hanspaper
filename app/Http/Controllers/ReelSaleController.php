@@ -177,10 +177,12 @@ class ReelSaleController extends Controller
                         : round($line['discount'] / $count, 2);
                     $allocatedDiscount += $stockDiscount;
                     $before = (float) $stock->balance_length;
+                    $weightMovement = $stock->weightMovement((float) $stock->balance_weight_kg, (float) $stock->balance_weight_kg, 0);
 
                     ReelSaleItem::create([
                         'reel_sale_id' => $sale->id,
                         'reel_stock_id' => $stock->id,
+                        ...$weightMovement,
                         'length' => $before,
                         'unit_price' => $line['unitPrice'],
                         'discount' => $stockDiscount,
@@ -188,12 +190,13 @@ class ReelSaleController extends Controller
                         'balance_before' => $before,
                         'balance_after' => 0,
                     ]);
-                    $stock->update(['balance_length' => 0, 'status' => 'sold']);
+                    $stock->update(['balance_length' => 0, 'balance_weight_kg' => $stock->isWeightBased() ? 0 : null, 'status' => 'sold']);
                     ReelStockMovement::create([
                         'batch_uuid' => $batchUuid,
                         'reel_stock_id' => $stock->id,
                         'transaction_type' => 'sale',
                         'stock_status' => 'full',
+                        ...$weightMovement,
                         'length' => $before,
                         'balance_before' => $before,
                         'balance_after' => 0,

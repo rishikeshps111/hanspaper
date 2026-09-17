@@ -11,6 +11,11 @@
         });
         $('#stockProviderId,#stockWarehouseId').select2({ theme: 'bootstrap-5', width: '100%', allowClear: true, dropdownParent: $('#addStockModal') });
         $('#quickReelBrand,#quickReelType,#quickReelGsm').select2({ theme: 'bootstrap-5', width: '100%', allowClear: true, dropdownParent: $('#quickReelModal') });
+        $('#quickReelType').on('change', function () {
+            const weight = $(this).find(':selected').data('volume') === 'weight';
+            $('#quickMeasureLabel').text(weight ? 'Nominal Weight (kg)' : 'Length (m)');
+            $('#quickMeasureLabel').closest('.col-md-6').find('input').attr('name', weight ? 'weight_kg' : 'length');
+        });
 
         const setSubmitLoading = function (button, loading, loadingText) {
             const element = $(button);

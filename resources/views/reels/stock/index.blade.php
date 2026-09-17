@@ -79,8 +79,8 @@
                                     <th>Provider</th>
                                     <th>Specification</th>
                                     <th>Warehouse</th>
-                                    <th>Original Length (m)</th>
-                                    <th>Balance Length (m)</th>
+                                    <th>Original Length / Weight</th>
+                                    <th>Balance</th>
                                     <th>Stock Added Date</th>
                                     <th>Status</th>
                                     <th>Action</th>

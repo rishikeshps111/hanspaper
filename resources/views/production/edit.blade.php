@@ -2,7 +2,7 @@
 @section('title', __('item.edit'))
 
 @section('css')
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 @endsection
 
 @section('content')
@@ -206,21 +206,43 @@
                                                         <input type="hidden" name="production_id"
                                                             value="{{ $productionItemMaster->id }}">
                                                         @if ($activeRun)
-                                                            <input type="hidden" name="production_run_id" value="{{ $activeRun->id }}">
+                                                            <input type="hidden" name="production_run_id"
+                                                                value="{{ $activeRun->id }}">
                                                             <div class="col-md-12">
                                                                 <div class="alert alert-primary border-primary">
-                                                                    <div class="d-flex justify-content-between align-items-center mb-3">
-                                                                        <strong><i class="bx bx-play-circle me-1"></i>Production In Progress</strong>
-                                                                        <span class="badge bg-primary">Started {{ $activeRun->started_at->format('d M Y h:i a') }}</span>
+                                                                    <div
+                                                                        class="d-flex justify-content-between align-items-center mb-3">
+                                                                        <strong><i
+                                                                                class="bx bx-play-circle me-1"></i>Production
+                                                                            In Progress</strong>
+                                                                        <span class="badge bg-primary">Started
+                                                                            {{ $activeRun->started_at->format('d M Y h:i a') }}</span>
                                                                     </div>
                                                                     <div class="row g-3">
-                                                                        <div class="col-md-3"><small class="d-block">Physical Reel</small><strong>{{ $activeRun->reelStock->stock_code }}</strong></div>
-                                                                        <div class="col-md-3"><small class="d-block">Reel Code</small><strong>{{ $activeRun->reelStock->reel?->code }}</strong></div>
-                                                                        <div class="col-md-2"><small class="d-block">Machine</small><strong>{{ $activeRun->machine?->machine_name }}</strong></div>
-                                                                        <div class="col-md-2"><small class="d-block">Produced By</small><strong>{{ $activeRun->productionUser?->full_name }}</strong></div>
-                                                                        <div class="col-md-2"><small class="d-block">Core</small><strong>{{ $activeRun->core?->code }} ({{ $activeRun->core?->name }})</strong></div>
-                                                                        <div class="col-md-1"><small class="d-block">Width</small><strong>{{ number_format($activeRun->output_roll_width, 2) }} mm</strong></div>
-                                                                        <div class="col-md-1"><small class="d-block">Roll Length</small><strong>{{ number_format($activeRun->roll_length, 2) }} m</strong></div>
+                                                                        <div class="col-md-3"><small
+                                                                                class="d-block">Physical
+                                                                                Reel</small><strong>{{ $activeRun->reelStock->stock_code }}</strong>
+                                                                        </div>
+                                                                        <div class="col-md-3"><small class="d-block">Reel
+                                                                                Code</small><strong>{{ $activeRun->reelStock->reel?->code }}</strong>
+                                                                        </div>
+                                                                        <div class="col-md-2"><small
+                                                                                class="d-block">Machine</small><strong>{{ $activeRun->machine?->machine_name }}</strong>
+                                                                        </div>
+                                                                        <div class="col-md-2"><small
+                                                                                class="d-block">Produced
+                                                                                By</small><strong>{{ $activeRun->productionUser?->full_name }}</strong>
+                                                                        </div>
+                                                                        <div class="col-md-2"><small
+                                                                                class="d-block">Core</small><strong>{{ $activeRun->core?->code }}
+                                                                                ({{ $activeRun->core?->name }})</strong>
+                                                                        </div>
+                                                                        <div class="col-md-1"><small
+                                                                                class="d-block">Width</small><strong>{{ number_format($activeRun->output_roll_width, 2) }}
+                                                                                mm</strong></div>
+                                                                        <div class="col-md-1"><small class="d-block">Roll
+                                                                                Length</small><strong>{{ number_format($activeRun->roll_length, 2) }}
+                                                                                m</strong></div>
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -229,7 +251,8 @@
                                                             <x-label for="production_qty" name="{{ __('Quantity') }}" />
                                                             <input type="number" name="production_qty"
                                                                 id="production_qty" min="1" step="1"
-                                                                value="" class="form-control" {{ $activeRun ? 'required' : 'disabled' }}>
+                                                                value="" class="form-control"
+                                                                {{ $activeRun ? 'required' : 'disabled' }}>
                                                         </div>
                                                         <div class="col-md-4 mt-2 {{ $activeRun ? 'd-none' : '' }}">
                                                             <x-label for="user_id" name="{{ __('Produced By') }}" />
@@ -241,39 +264,67 @@
                                                         <div class="col-md-4 mt-2 {{ $activeRun ? 'd-none' : '' }}">
                                                             <x-label for="machines" name="{{ __('Machine') }}" />
                                                             <div class="input-group">
-                                                                <select class="form-select single-select-clear-field" id="machines" name="machines" data-placeholder="Choose machine" {{ $activeRun ? '' : 'required' }}>
+                                                                <select class="form-select single-select-clear-field"
+                                                                    id="machines" name="machines"
+                                                                    data-placeholder="Choose machine"
+                                                                    {{ $activeRun ? '' : 'required' }}>
                                                                     <option value=""></option>
-                                                                    @if($activeRun?->machine)
-                                                                        <option value="{{ $activeRun->machine_id }}" selected>{{ $activeRun->machine->machine_name }}</option>
+                                                                    @if ($activeRun?->machine)
+                                                                        <option value="{{ $activeRun->machine_id }}"
+                                                                            selected>
+                                                                            {{ $activeRun->machine->machine_name }}
+                                                                        </option>
                                                                     @endif
                                                                     @foreach ($availableMachines as $machine)
-                                                                        <option value="{{ $machine->id }}" @selected($productionItemMaster->assigned_machine_id == $machine->id)>{{ $machine->machine_name }}</option>
+                                                                        <option value="{{ $machine->id }}"
+                                                                            @selected($productionItemMaster->assigned_machine_id == $machine->id)>
+                                                                            {{ $machine->machine_name }}</option>
                                                                     @endforeach
                                                                 </select>
                                                             </div>
                                                         </div>
                                                         <div class="col-md-12 mt-2">
-                                                            <x-label for="reel_stock_id" name="{{ __('Physical Reel Stock') }}" />
-                                                            <select class="form-select single-select-clear-field" id="reel_stock_id"
-                                                                name="reel_stock_id" data-placeholder="Choose Full or Bit Reel" {{ $activeRun ? 'disabled' : 'required' }}>
+                                                            <x-label for="reel_stock_id"
+                                                                name="{{ __('Physical Reel Stock') }}" />
+                                                            <select class="form-select single-select-clear-field"
+                                                                id="reel_stock_id" name="reel_stock_id"
+                                                                data-placeholder="Choose Full or Bit Reel"
+                                                                {{ $activeRun ? 'disabled' : 'required' }}>
                                                                 @if ($activeRun)
                                                                     @php
                                                                         $activeStock = $activeRun->reelStock;
-                                                                        $activeSourceWidth = (float) ($activeStock->reel?->width ?? 0);
-                                                                        $activeCutWidth = (float) ($activeStock->cut_width ?? 0);
-                                                                        $activeWidthSplits = $activeCutWidth > 0 ? (int) floor($activeSourceWidth / $activeCutWidth) : 0;
-                                                                        $activeActualLength = $activeRun->source_reel_status === 'bit' && $activeWidthSplits > 0
-                                                                            ? (float) $activeStock->balance_length / $activeWidthSplits
-                                                                            : (float) $activeStock->balance_length;
+                                                                        $activeSourceWidth =
+                                                                            (float) ($activeStock->reel?->width ?? 0);
+                                                                        $activeCutWidth =
+                                                                            (float) ($activeStock->cut_width ?? 0);
+                                                                        $activeWidthSplits =
+                                                                            $activeCutWidth > 0
+                                                                                ? (int) floor(
+                                                                                    $activeSourceWidth /
+                                                                                        $activeCutWidth,
+                                                                                )
+                                                                                : 0;
+                                                                        $activeActualLength =
+                                                                            $activeRun->source_reel_status === 'bit' &&
+                                                                            $activeWidthSplits > 0
+                                                                                ? (float) $activeStock->balance_length /
+                                                                                    $activeWidthSplits
+                                                                                : (float) $activeStock->balance_length;
                                                                     @endphp
-                                                                    <option value="{{ $activeRun->reel_stock_id }}" selected
+                                                                    <option value="{{ $activeRun->reel_stock_id }}"
+                                                                        selected
                                                                         data-status="{{ $activeRun->source_reel_status }}"
                                                                         data-width="{{ $activeRun->reelStock->reel?->width }}"
                                                                         data-balance="{{ $activeRun->reelStock->balance_length }}"
+                                                                        data-volume="{{ $activeStock->reel->type->volume }}"
+                                                                        data-balance-weight="{{ $activeStock->balance_weight_kg }}"
                                                                         data-cut-width="{{ $activeRun->reelStock->cut_width ?? 0 }}">
-                                                                        {{ $activeRun->reelStock->stock_code }} | {{ $activeRun->reelStock->reel?->code }}
+                                                                        {{ $activeRun->reelStock->stock_code }} |
+                                                                        {{ $activeRun->reelStock->reel?->code }}
                                                                         @if ($activeRun->source_reel_status === 'bit')
-                                                                            | {{ number_format($activeActualLength, 2) }} m
+                                                                            |
+                                                                            {{ number_format($activeStock->availableBalance(), 2) }}
+                                                                            {{ $activeStock->reel->measurementUnit() }}
                                                                         @endif
                                                                     </option>
                                                                 @else
@@ -284,59 +335,121 @@
                                                         <div class="col-md-6 mt-2">
                                                             <x-label for="core_id" name="{{ __('Core') }}" />
                                                             <select class="form-select" id="core_id" name="core_id"
-                                                                data-placeholder="Choose Core" {{ $activeRun ? 'disabled' : '' }}>
+                                                                data-placeholder="Choose Core"
+                                                                {{ $activeRun ? 'disabled' : '' }}>
                                                                 @if ($activeRun?->core)
                                                                     <option value="{{ $activeRun->core_id }}" selected
                                                                         data-available="{{ $activeRun->core->quantity }}"
                                                                         data-name="{{ $activeRun->core->name }}">
-                                                                        {{ $activeRun->core->code }} | {{ $activeRun->core->name }}
+                                                                        {{ $activeRun->core->code }} |
+                                                                        {{ $activeRun->core->name }}
                                                                     </option>
                                                                 @else
                                                                     <option value=""></option>
                                                                 @endif
                                                             </select>
-                                                            <small class="text-muted" id="coreQuantityPreview">Select a core to see availability.</small>
+                                                            <small class="text-muted" id="coreQuantityPreview">Select a
+                                                                core to see availability.</small>
                                                         </div>
-                                                      
+
                                                         <div class="col-md-3 mt-2">
-                                                            <x-label for="output_roll_width" name="{{ __('Output Roll Width (mm)') }}" />
-                                                            <input type="number" name="output_roll_width" id="output_roll_width"
-                                                                class="form-control" min="0.001" step="0.001"
-                                                                value="{{ $activeRun?->output_roll_width }}" {{ $activeRun ? 'readonly' : 'required' }}>
+                                                            <x-label for="output_roll_width"
+                                                                name="{{ __('Output Roll Width (mm)') }}" />
+                                                            <input type="number" name="output_roll_width"
+                                                                id="output_roll_width" class="form-control"
+                                                                min="0.001" step="0.001"
+                                                                value="{{ $activeRun?->output_roll_width }}"
+                                                                {{ $activeRun ? 'readonly' : 'required' }}>
                                                         </div>
-                                                          <div class="col-md-3 mt-2">
-                                                            <x-label for="roll_length" name="{{ __('Roll Length (m)') }}" />
+                                                        <div class="col-md-3 mt-2">
+                                                            <x-label for="roll_length"
+                                                                name="{{ __('Roll Length (m)') }}" />
                                                             <input type="number" name="roll_length" id="roll_length"
                                                                 class="form-control" min="0.001" step="0.001"
-                                                                value="{{ $activeRun?->roll_length }}" {{ $activeRun ? 'readonly' : 'required' }}>
+                                                                value="{{ $activeRun?->roll_length }}"
+                                                                {{ $activeRun ? 'readonly' : 'required' }}>
                                                         </div>
-                                                        <input type="hidden" name="reel_status_after_usage" id="reel_status_after_usage" value="">
-                                                        <input type="hidden" name="reel_status_selection_type" id="reel_status_selection_type" value="manual">
-                                                        <div id="reelStatusAfterUsageError" class="text-danger small mt-1"></div>
+                                                        <input type="hidden" name="reel_status_after_usage"
+                                                            id="reel_status_after_usage" value="">
+                                                        <input type="hidden" name="reel_status_selection_type"
+                                                            id="reel_status_selection_type" value="manual">
+                                                        <input type="hidden" name="remaining_weight_kg"
+                                                            id="production_remaining_weight_kg" disabled>
+                                                        <div id="reelStatusAfterUsageError"
+                                                            class="text-danger small mt-1"></div>
                                                         <div class="col-md-12 mt-3 {{ $activeRun ? '' : 'd-none' }}">
-                                                            <div class="alert alert-light border mb-0" id="reelCutPreview">
+                                                            <div class="alert alert-light border mb-0"
+                                                                id="reelCutPreview">
                                                                 <div class="row g-2">
-                                                                    <div class="col-md"><small class="text-muted">Source Width (mm)</small><div class="fw-bold" id="previewSourceWidth">—</div></div>
-                                                                    <div class="col-md"><small class="text-muted">Source Length (m)</small><div class="fw-bold" id="previewBalance">—</div></div>
-                                                                    <div class="col-md"><small class="text-muted">Width Splits</small><div class="fw-bold" id="previewRollCount">0</div></div>
-                                                                    <div class="col-md"><small class="text-muted">Available Capacity</small><div class="fw-bold" id="previewTotalLength">0.00 m</div></div>
-                                                                    <div class="col-md"><small class="text-muted">Usage</small><div class="fw-bold" id="previewUsage">0.00 m</div></div>
-                                                                    <div class="col-md"><small class="text-muted">Possible Rolls</small><div class="fw-bold" id="previewPossibleRolls">0</div></div>
-                                                                    <div class="col-md"><small class="text-muted">Width Waste (mm)</small><div class="fw-bold" id="previewWaste">0.00 mm</div></div>
-                                                                    <div class="col-md"><small class="text-muted">Remaining Length (m)</small><div class="fw-bold" id="previewRemaining">—</div></div>
-                                                                    <div class="col-md"><small class="text-muted">Actual Remaining Length (m)</small><div class="fw-bold" id="previewPhysicalRemaining">—</div></div>
-                                                                    <div class="col-md"><small class="text-muted">Resulting Status</small><div><span class="badge bg-secondary" id="previewStatus">—</span></div></div>
+                                                                    <div class="col-md"><small class="text-muted">Source
+                                                                            Width (mm)</small>
+                                                                        <div class="fw-bold" id="previewSourceWidth">—
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="col-md"><small class="text-muted">Source
+                                                                            Length (m)</small>
+                                                                        <div class="fw-bold" id="previewBalance">—</div>
+                                                                    </div>
+                                                                    <div class="col-md"><small class="text-muted">Width
+                                                                            Splits</small>
+                                                                        <div class="fw-bold" id="previewRollCount">0</div>
+                                                                    </div>
+                                                                    <div class="col-md"><small
+                                                                            class="text-muted">Available Capacity</small>
+                                                                        <div class="fw-bold" id="previewTotalLength">0.00
+                                                                            m</div>
+                                                                    </div>
+                                                                    <div class="col-md"><small
+                                                                            class="text-muted">Usage</small>
+                                                                        <div class="fw-bold" id="previewUsage">0.00 m
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="col-md"><small class="text-muted">Possible
+                                                                            Rolls</small>
+                                                                        <div class="fw-bold" id="previewPossibleRolls">0
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="col-md"><small class="text-muted">Width
+                                                                            Waste (mm)</small>
+                                                                        <div class="fw-bold" id="previewWaste">0.00 mm
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="col-md"><small
+                                                                            class="text-muted">Remaining Length (m)</small>
+                                                                        <div class="fw-bold" id="previewRemaining">—</div>
+                                                                    </div>
+                                                                    <div class="col-md"><small class="text-muted">Actual
+                                                                            Remaining Length (m)</small>
+                                                                        <div class="fw-bold"
+                                                                            id="previewPhysicalRemaining">—</div>
+                                                                    </div>
+                                                                    <div class="col-md"><small
+                                                                            class="text-muted">Resulting Status</small>
+                                                                        <div><span class="badge bg-secondary"
+                                                                                id="previewStatus">—</span></div>
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         </div>
                                                         @if ($activeRun)
-                                                            <div id="productionCorrectionReason" class="col-12 mt-3 mb-3 d-none"><label for="correction_reason" class="form-label">Reason for Correction <span class="text-muted">(optional)</span></label><textarea id="correction_reason" name="correction_reason" class="form-control" maxlength="1000" disabled></textarea></div>
+                                                            <div id="productionCorrectionReason"
+                                                                class="col-12 mt-3 mb-3 d-none"><label
+                                                                    for="correction_reason" class="form-label">Reason for
+                                                                    Correction <span
+                                                                        class="text-muted">(optional)</span></label>
+                                                                <textarea id="correction_reason" name="correction_reason" class="form-control" maxlength="1000" disabled></textarea>
+                                                            </div>
                                                         @endif
                                                         <div class="col-md-12 mb-3 px-4 text-end">
                                                             <div class="d-flex flex-wrap justify-content-end gap-3">
                                                                 @if ($activeRun)
-                                                                    <button type="button" id="correctProductionEntry" class="btn btn-warning">Correct Production Entry</button>
-                                                                    <a href="{{ url()->current() }}" id="cancelProductionCorrection" class="btn btn-outline-secondary d-none">Cancel Correction</a>
+                                                                    <button type="button" id="correctProductionEntry"
+                                                                        class="btn btn-warning">Correct Production
+                                                                        Entry</button>
+                                                                    <a href="{{ url()->current() }}"
+                                                                        id="cancelProductionCorrection"
+                                                                        class="btn btn-outline-secondary d-none">Cancel
+                                                                        Correction</a>
                                                                 @endif
                                                                 <x-button type="submit" class="primary px-4"
                                                                     text="{{ $activeRun ? __('Update Production') : __('Start Production') }}" />
@@ -409,10 +522,31 @@
                                                                     :showSelectOptionAll=true />
                                                             </div>
                                                         </div>
-                                                        <div class="col-md-6 mt-2"><x-label for="packing_box_id" name="{{ __('Packing Box') }}" /><select id="packing_box_id" name="packing_box_id" class="form-select"><option></option></select><small class="text-muted" id="boxStockSummary">Select a packing box.</small></div>
-                                                        <div class="col-md-6 mt-2"><x-label for="packing_box_quantity" name="{{ __('Boxes Used') }}" /><input type="number" min="1" name="packing_box_quantity" id="packing_box_quantity" class="form-control" required></div>
-                                                        <div class="col-md-6 mt-2"><x-label for="packing_cover_id" name="{{ __('Packing Cover') }}" /><select id="packing_cover_id" name="packing_cover_id" class="form-select"><option></option></select><small class="text-muted" id="coverStockSummary">Select a packing cover.</small></div>
-                                                        <div class="col-md-6 mt-2"><x-label for="packing_cover_quantity" name="{{ __('Covers Used') }}" /><input type="number" min="1" name="packing_cover_quantity" id="packing_cover_quantity" class="form-control" required></div>
+                                                        <div class="col-md-6 mt-2"><x-label for="packing_box_id"
+                                                                name="{{ __('Packing Box') }}" /><select
+                                                                id="packing_box_id" name="packing_box_id"
+                                                                class="form-select">
+                                                                <option></option>
+                                                            </select><small class="text-muted" id="boxStockSummary">Select
+                                                                a packing box.</small></div>
+                                                        <div class="col-md-6 mt-2"><x-label for="packing_box_quantity"
+                                                                name="{{ __('Boxes Used') }}" /><input type="number"
+                                                                min="1" name="packing_box_quantity"
+                                                                id="packing_box_quantity" class="form-control" required>
+                                                        </div>
+                                                        <div class="col-md-6 mt-2"><x-label for="packing_cover_id"
+                                                                name="{{ __('Packing Cover') }}" /><select
+                                                                id="packing_cover_id" name="packing_cover_id"
+                                                                class="form-select">
+                                                                <option></option>
+                                                            </select><small class="text-muted"
+                                                                id="coverStockSummary">Select a packing cover.</small>
+                                                        </div>
+                                                        <div class="col-md-6 mt-2"><x-label for="packing_cover_quantity"
+                                                                name="{{ __('Covers Used') }}" /><input type="number"
+                                                                min="1" name="packing_cover_quantity"
+                                                                id="packing_cover_quantity" class="form-control" required>
+                                                        </div>
                                                         <div class="col-md-12 mb-3 px-4 text-end">
                                                             <div class="gap-3">
                                                                 <x-button type="submit" class="primary px-4"
@@ -442,7 +576,8 @@
                                                         <input type="hidden" name="production_id"
                                                             value="{{ $productionItemMaster->id }}">
                                                         <div class="col-md-4 mt-2">
-                                                            <x-label for="assigned_machine" name="{{ __('Machine') }}" />
+                                                            <x-label for="assigned_machine"
+                                                                name="{{ __('Machine') }}" />
                                                             <div class="input-group">
                                                                 <x-dropdown-machines dropdownName='assigned_machine'
                                                                     :showSelectOptionAll=true />
@@ -544,7 +679,7 @@
         </div>
     </div>
     <!-- Import Modals -->
-    
+
     <div class="modal fade" id="addRealModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -569,19 +704,47 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <label class="form-label fw-semibold">Physical Reel Result <span class="text-danger">*</span></label>
                     <div class="row g-3 mb-4">
-                        <div class="col-md-6"><label class="border rounded p-3 w-100"><input class="form-check-input me-2 reel-result-option" type="radio" name="modal_reel_result" value="bit"> <strong>Bit</strong><small class="d-block text-muted ms-4">Keep the remaining reel for later production.</small></label></div>
-                        <div class="col-md-6"><label class="border rounded p-3 w-100"><input class="form-check-input me-2 reel-result-option" type="radio" name="modal_reel_result" value="finished"> <strong>Finished</strong><small class="d-block text-muted ms-4">Treat all remaining reel material as wastage.</small></label></div>
+                        <div class="col-md-6"><label class="border rounded p-3 w-100"><input
+                                    class="form-check-input me-2 reel-result-option" type="radio"
+                                    name="modal_reel_result" value="bit"> <strong>Bit</strong><small
+                                    class="d-block text-muted ms-4">Keep the remaining reel for later
+                                    production.</small></label></div>
+                        <div class="col-md-6"><label class="border rounded p-3 w-100"><input
+                                    class="form-check-input me-2 reel-result-option" type="radio"
+                                    name="modal_reel_result" value="finished"> <strong>Finished</strong><small
+                                    class="d-block text-muted ms-4" id="finishedReelDescription">Treat all remaining reel
+                                    material as wastage.</small></label></div>
                     </div>
-                    <div class="card border mb-0"><div class="card-body"><div class="row g-3">
-                        <div class="col-md-4"><small class="text-muted d-block">Width Splits</small><strong id="modalWidthSplits">0</strong></div>
-                        <div class="col-md-4"><small class="text-muted d-block">Remaining Output Length</small><strong id="modalRemainingOutput">0.00 m</strong></div>
-                        <div class="col-md-4"><small class="text-muted d-block">Actual Remaining Length</small><strong id="modalPhysicalRemaining">0.00 m</strong></div>
-                    </div></div></div>
-                    <div class="alert alert-danger mt-3 mb-0 d-none" id="productionWastageSummary"><strong>Wastage:</strong> <span id="modalWastageOutput">0.00 m</span> output length; actual physical wastage <span id="modalPhysicalWastage">0.00 m</span>.</div>
+                    <div id="productionWeightFields" class="mb-3 d-none">
+                        <label class="form-label fw-semibold">Physical Reel Result <span
+                                class="text-danger">*</span></label><br>
+                        <label for="remaining_weight_kg" class="form-label">Measured Remaining Weight (kg)</label>
+                        <input type="number" class="form-control" id="remaining_weight_kg" min="0"
+                            step="0.001" disabled>
+                        <div class="form-text">Enter the measured balance only when keeping this reel as Bit.</div>
+                        <div class="text-danger small" id="remainingWeightError"></div>
+                    </div>
+                    <div class="card border mb-0">
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-4"><small class="text-muted d-block">Width Splits</small><strong
+                                        id="modalWidthSplits">0</strong></div>
+                                <div class="col-md-4"><small class="text-muted d-block">Remaining Output
+                                        Length</small><strong id="modalRemainingOutput">0.00 m</strong></div>
+                                <div class="col-md-4"><small class="text-muted d-block">Actual Remaining
+                                        Length</small><strong id="modalPhysicalRemaining">0.00 m</strong></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="alert alert-danger mt-3 mb-0 d-none" id="productionWastageSummary">
+                        <strong>Wastage:</strong> <span id="modalWastageOutput">0.00 m</span> output length; actual
+                        physical wastage <span id="modalPhysicalWastage">0.00 m</span>.
+                    </div>
                 </div>
-                <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-primary" id="confirmProductionUpdate">Update Production</button></div>
+                <div class="modal-footer"><button type="button" class="btn btn-light"
+                        data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-primary"
+                        id="confirmProductionUpdate">Update Production</button></div>
             </div>
         </div>
     </div>
@@ -593,30 +756,48 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
     <script src="{{ versionedAsset('custom/js/items/production.js') }}"></script>
     <script>
-        $(function () {
+        $(function() {
             let reelStatusManuallySelected = false;
             let latestCutCalculation = null;
 
             const initPackingMaterial = function(selector, type) {
-                $(selector).select2({theme:'bootstrap-5',width:'100%',allowClear:true,placeholder:'Choose '+(type==='box'?'Packing Box':'Packing Cover'),ajax:{url:@json(url('/packing-materials')).replace(/\/$/,'')+'/'+type+'/search',dataType:'json',delay:300,data:p=>({q:p.term||''}),processResults:r=>r}});
+                $(selector).select2({
+                    theme: 'bootstrap-5',
+                    width: '100%',
+                    allowClear: true,
+                    placeholder: 'Choose ' + (type === 'box' ? 'Packing Box' : 'Packing Cover'),
+                    ajax: {
+                        url: @json(url('/packing-materials')).replace(/\/$/, '') + '/' + type + '/search',
+                        dataType: 'json',
+                        delay: 300,
+                        data: p => ({
+                            q: p.term || ''
+                        }),
+                        processResults: r => r
+                    }
+                });
             };
-            initPackingMaterial('#packing_box_id','box'); initPackingMaterial('#packing_cover_id','cover');
-            const updatePackingMaterialSummary=function(){
-                const box=$('#packing_box_id').select2('data')[0]||{},cover=$('#packing_cover_id').select2('data')[0]||{};
-                $('#boxStockSummary').text(box.id ? `Available: ${box.available_quantity}` : 'Select a packing box.');
-                $('#coverStockSummary').text(cover.id ? `Available: ${cover.available_quantity}` : 'Select a packing cover.');
+            initPackingMaterial('#packing_box_id', 'box');
+            initPackingMaterial('#packing_cover_id', 'cover');
+            const updatePackingMaterialSummary = function() {
+                const box = $('#packing_box_id').select2('data')[0] || {},
+                    cover = $('#packing_cover_id').select2('data')[0] || {};
+                $('#boxStockSummary').text(box.id ? `Available: ${box.available_quantity}` :
+                    'Select a packing box.');
+                $('#coverStockSummary').text(cover.id ? `Available: ${cover.available_quantity}` :
+                    'Select a packing cover.');
             };
-            $('#packing_box_id,#packing_cover_id').on('change',updatePackingMaterialSummary);
+            $('#packing_box_id,#packing_cover_id').on('change', updatePackingMaterialSummary);
 
-            const formatReelStockOption = function (option) {
+            const formatReelStockOption = function(option) {
                 if (!option.id) return option.text;
 
                 const status = String(option.status || $(option.element).data('status') || '').toLowerCase();
                 let label = String(option.text || '').replace(/\s+/g, ' ').trim();
 
-                const badgeClass = status === 'bit'
-                    ? 'bg-warning text-dark'
-                    : 'bg-primary';
+                const badgeClass = status === 'bit' ?
+                    'bg-warning text-dark' :
+                    'bg-primary';
                 const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
 
                 return $('<span class="d-flex align-items-center justify-content-between gap-2 w-100">' +
@@ -649,56 +830,69 @@
             });
 
             $('#core_id').select2({
-                theme: 'bootstrap-5', width: '100%', allowClear: true, placeholder: 'Choose Core',
+                theme: 'bootstrap-5',
+                width: '100%',
+                allowClear: true,
+                placeholder: 'Choose Core',
                 ajax: {
-                    url: @json(route('item.production.cores.search', [], false)), dataType: 'json', delay: 300,
-                    data: params => ({q: params.term || ''}), processResults: response => response, cache: false
+                    url: @json(route('item.production.cores.search', [], false)),
+                    dataType: 'json',
+                    delay: 300,
+                    data: params => ({
+                        q: params.term || ''
+                    }),
+                    processResults: response => response,
+                    cache: false
                 }
             });
 
-            const updateCorePreview = function () {
+            const updateCorePreview = function() {
                 const option = $('#core_id option:selected');
                 const core = $('#core_id').select2('data')[0] || {};
                 const available = parseInt(core.available_quantity ?? option.data('available')) || 0;
                 const required = parseInt($('#production_qty').val()) || 0;
                 const remaining = Math.max(0, available - required);
-                $('#coreQuantityPreview').text($('#core_id').val()
-                    ? `Available: ${available} | Required: ${required} | Remaining: ${remaining}`
-                    : 'Select a core to see availability.').toggleClass('text-danger', required > available);
+                $('#coreQuantityPreview').text($('#core_id').val() ?
+                    `Available: ${available} | Required: ${required} | Remaining: ${remaining}` :
+                    'Select a core to see availability.').toggleClass('text-danger', required > available);
             };
             $('#core_id, #production_qty').on('change input', updateCorePreview);
             updateCorePreview();
 
-            const calculateReelCut = function () {
+            const calculateReelCut = function() {
                 const option = $('#reel_stock_id option:selected');
                 const stock = $('#reel_stock_id').select2('data')[0] || {};
                 const sourceWidth = parseFloat(stock.width ?? option.data('width')) || 0;
                 const balance = parseFloat(stock.balance ?? option.data('balance')) || 0;
                 const existingCutWidth = parseFloat(stock.cut_width ?? option.data('cut-width')) || 0;
                 const stockStatus = String(stock.status ?? option.data('status') ?? '').toLowerCase();
+                const weightBased = (stock.volume ?? option.data('volume')) === 'weight';
+                const availableWeight = Number(stock.balance_weight_kg ?? option.data('balance-weight')) || 0;
                 const rollLength = parseFloat($('#roll_length').val()) || 0;
                 const quantity = parseFloat($('#production_qty').val()) || 0;
                 const outputWidth = parseFloat($('#output_roll_width').val()) || 0;
                 const rollCount = outputWidth > 0 ? Math.floor(sourceWidth / outputWidth) : 0;
-                const previousWidthSplits = existingCutWidth > 0
-                    ? Math.max(1, Math.floor(sourceWidth / existingCutWidth))
-                    : 1;
-                const physicalAvailableLength = stockStatus === 'bit' && existingCutWidth > 0
-                    ? balance / previousWidthSplits
-                    : balance;
+                const previousWidthSplits = existingCutWidth > 0 ?
+                    Math.max(1, Math.floor(sourceWidth / existingCutWidth)) :
+                    1;
+                const physicalAvailableLength = stockStatus === 'bit' && existingCutWidth > 0 ?
+                    balance / previousWidthSplits :
+                    balance;
                 const totalLength = physicalAvailableLength * rollCount;
                 const usage = quantity * rollLength;
                 const waste = rollCount > 0 ? sourceWidth - (outputWidth * rollCount) : 0;
                 const remaining = Math.max(0, totalLength - usage);
                 const physicalRemaining = rollCount > 0 ? remaining / rollCount : 0;
                 const possibleRolls = rollLength > 0 ? Math.floor(totalLength / rollLength) : 0;
-                const valid = sourceWidth > 0 && rollLength > 0 && quantity > 0 && usage <= totalLength &&
+                const valid = sourceWidth > 0 && rollLength > 0 && quantity > 0 && (weightBased ?
+                        availableWeight > 0 : usage <= totalLength) &&
                     outputWidth > 0 && outputWidth <= sourceWidth && rollCount > 0;
                 const calculatedStatus = remaining <= 0 ? 'finished' : 'bit';
                 const statusSelect = $('#reel_status_after_usage');
 
                 statusSelect.find('option[value="bit"]').prop('disabled', valid && remaining <= 0);
-                if (valid && (!reelStatusManuallySelected || (statusSelect.val() === 'bit' && remaining <= 0))) {
+                if (valid && (!reelStatusManuallySelected || (statusSelect.val() === 'bit' && remaining <=
+                        0))) {
                     statusSelect.val(calculatedStatus);
                     reelStatusManuallySelected = false;
                 } else if (!valid && !reelStatusManuallySelected) {
@@ -713,7 +907,8 @@
                 $('#reel_status_selection_type').val(reelStatusManuallySelected ? 'manual' : 'automatic');
 
                 $('#previewSourceWidth').text(sourceWidth ? sourceWidth.toFixed(2) + ' mm' : '—');
-                $('#previewBalance').text(physicalAvailableLength ? physicalAvailableLength.toFixed(2) + ' m' : '—');
+                $('#previewBalance').text(physicalAvailableLength ? physicalAvailableLength.toFixed(2) + ' m' :
+                    '—');
                 $('#previewRollCount').text(rollCount);
                 $('#previewTotalLength').text(totalLength.toFixed(2) + ' m');
                 $('#previewUsage').text(usage.toFixed(2) + ' m');
@@ -722,11 +917,33 @@
                 $('#previewRemaining').text(sourceWidth ? remaining.toFixed(2) + ' m' : '—');
                 $('#previewPhysicalRemaining').text(sourceWidth ? physicalRemaining.toFixed(2) + ' m' : '—');
                 $('#previewStatus').text(valid ? (remaining <= 0 ? 'Finished' : 'Bit') : '—')
-                    .attr('class', 'badge ' + (valid ? (remaining <= 0 ? 'bg-secondary' : 'bg-warning text-dark') : 'bg-secondary'));
-                latestCutCalculation = {valid, rollCount, remaining, physicalRemaining, totalLength, usage};
+                    .attr('class', 'badge ' + (valid ? (remaining <= 0 ? 'bg-secondary' :
+                        'bg-warning text-dark') : 'bg-secondary'));
+                $('#previewBalance').siblings('small').text(weightBased ? 'Available Weight (kg)' :
+                    'Source Length (m)');
+                $('#previewTotalLength, #previewUsage, #previewPossibleRolls, #previewRemaining, #previewPhysicalRemaining')
+                    .parent().toggle(!weightBased);
+                if (weightBased) {
+                    $('#previewBalance').text(availableWeight.toFixed(2) + ' kg');
+                    $('#previewTotalLength, #previewUsage, #previewPossibleRolls, #previewRemaining, #previewPhysicalRemaining')
+                        .text('Not calculated for weight');
+                    $('#previewStatus').text('Set when updating');
+                    $('#reelStatusSelectionHelp').text(
+                        'Enter the measured remaining weight when updating production.');
+                }
+                latestCutCalculation = {
+                    valid,
+                    rollCount,
+                    remaining,
+                    physicalRemaining,
+                    totalLength,
+                    usage,
+                    weightBased,
+                    availableWeight
+                };
             };
 
-            const applyStoredCutWidth = function () {
+            const applyStoredCutWidth = function() {
                 reelStatusManuallySelected = false;
                 const option = $('#reel_stock_id option:selected');
                 const stock = $('#reel_stock_id').select2('data')[0] || {};
@@ -742,8 +959,9 @@
             };
 
             $('#reel_stock_id').on('change', applyStoredCutWidth);
-            $('#reel_stock_id, #roll_length, #output_roll_width, #production_qty').on('change input', calculateReelCut);
-            $('#reel_status_after_usage').on('change', function () {
+            $('#reel_stock_id, #roll_length, #output_roll_width, #production_qty').on('change input',
+                calculateReelCut);
+            $('#reel_status_after_usage').on('change', function() {
                 reelStatusManuallySelected = Boolean(this.value);
                 calculateReelCut();
             });
@@ -758,7 +976,7 @@
                 const escapeHtml = value => $('<div>').text(value || '—').html();
                 const labels = [stock, stock];
                 const labelHtml = labels.map((item, index) =>
-                    `<div class="label"><div class="date">${escapeHtml(item.stock_added_date)}</div><canvas id="barcode-${index}"></canvas><div class="stock">${escapeHtml(item.stock_code)}</div><div class="detail">${escapeHtml(item.reel_code)}</div><div class="detail">${escapeHtml(item.provider)}</div><div class="bit-badge">BIT REEL</div><div class="bit-length">Remaining : ${escapeHtml(item.actual_balance_length)} m</div></div>`
+                    `<div class="label"><div class="date">${escapeHtml(item.stock_added_date)}</div><canvas id="barcode-${index}"></canvas><div class="stock">${escapeHtml(item.stock_code)}</div><div class="detail">${escapeHtml(item.reel_code)}</div><div class="detail">${escapeHtml(item.provider)}</div><div class="bit-badge">BIT REEL</div><div class="bit-length">Remaining : ${escapeHtml(item.actual_balance_length)} ${escapeHtml(item.measurement_unit || 'm')}</div></div>`
                 ).join('');
                 const data = JSON.stringify(labels).replace(/</g, '\\u003c');
                 printWindow.document.write(
@@ -773,7 +991,7 @@
                 return Swal.fire({
                     icon: 'success',
                     title: 'Bit Reel Ready',
-                    html: `<div class="mb-2"><strong>${$('<div>').text(stock.stock_code).html()}</strong></div><span class="badge bg-warning text-dark mb-2">BIT REEL</span><div>Actual Balance Length: <strong>${$('<div>').text(stock.actual_balance_length).html()} m</strong></div>`,
+                    html: `<div class="mb-2"><strong>${$('<div>').text(stock.stock_code).html()}</strong></div><span class="badge bg-warning text-dark mb-2">BIT REEL</span><div>Remaining: <strong>${$('<div>').text(stock.actual_balance_length).html()} ${$('<div>').text(stock.measurement_unit || 'm').html()}</strong></div>`,
                     showCancelButton: true,
                     confirmButtonText: '<i class="bx bx-barcode me-1"></i> Print Sticker',
                     cancelButtonText: 'Close',
@@ -785,14 +1003,15 @@
                 });
             };
 
-            $('#correctProductionEntry').on('click', function () {
+            $('#correctProductionEntry').on('click', function() {
                 const form = $('#productionForm');
                 form.data('mode', 'correct').attr('action', @json(route('item.production.correct-production')));
                 $('#machines').closest('.col-md-4').removeClass('d-none');
                 form.find('[name="packed_by"]').closest('.col-md-4').removeClass('d-none');
                 $('#reel_stock_id, #core_id, #machines').prop('disabled', false).prop('required', true);
                 $('#output_roll_width, #roll_length').prop('readonly', false).prop('required', true);
-                $('#production_qty, #reel_status_after_usage').prop('required', false).prop('disabled', true);
+                $('#production_qty, #reel_status_after_usage').prop('required', false).prop('disabled',
+                    true);
                 $('#production_qty').closest('.col-md-4').addClass('d-none');
                 $('#correction_reason').prop('disabled', false).prop('required', false);
                 $('#productionCorrectionReason, #cancelProductionCorrection').removeClass('d-none');
@@ -800,7 +1019,7 @@
                 $(this).addClass('d-none');
             });
 
-            $('#productionForm').off('submit').on('submit', function (event) {
+            $('#productionForm').off('submit').on('submit', function(event) {
                 event.preventDefault();
                 const form = $(this);
                 $('#reelStatusAfterUsageError').empty();
@@ -815,22 +1034,36 @@
                 if (form.data('mode') === 'finish' && !form.data('update-confirmed')) {
                     calculateReelCut();
                     if (!latestCutCalculation?.valid) {
-                        Swal.fire('Error', 'Enter a valid quantity within the available reel capacity.', 'error');
+                        Swal.fire('Error', 'Enter a valid quantity within the available reel capacity.',
+                            'error');
                         return;
                     }
                     $('input[name="modal_reel_result"]').prop('checked', false);
+                    const weightBased = latestCutCalculation.weightBased;
+                    $('#finishedReelDescription').text(weightBased ?
+                        'Close this reel with zero remaining weight.' :
+                        'Treat all remaining reel material as wastage.');
+                    $('#production_remaining_weight_kg').prop('disabled', true).val('');
+                    $('#productionWeightFields').addClass('d-none');
+                    $('#remaining_weight_kg').prop('disabled', true).prop('required', false).attr('max',
+                        latestCutCalculation.availableWeight).val('');
+                    $('#remainingWeightError').empty();
+                    $('#modalWidthSplits').closest('.card').toggleClass('d-none', weightBased);
                     $('#modalWidthSplits').text(latestCutCalculation.rollCount);
                     $('#modalRemainingOutput').text(latestCutCalculation.remaining.toFixed(2) + ' m');
-                    $('#modalPhysicalRemaining').text(latestCutCalculation.physicalRemaining.toFixed(2) + ' m');
+                    $('#modalPhysicalRemaining').text(latestCutCalculation.physicalRemaining.toFixed(2) +
+                        ' m');
                     $('#modalWastageOutput').text(latestCutCalculation.remaining.toFixed(2) + ' m');
-                    $('#modalPhysicalWastage').text(latestCutCalculation.physicalRemaining.toFixed(2) + ' m');
+                    $('#modalPhysicalWastage').text(latestCutCalculation.physicalRemaining.toFixed(2) +
+                        ' m');
                     $('#productionWastageSummary').addClass('d-none');
                     $('#updateProductionModal').modal('show');
                     return;
                 }
                 const button = form.find('button[type="submit"]');
                 const originalHtml = button.html();
-                button.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> Saving...');
+                button.prop('disabled', true).html(
+                    '<span class="spinner-border spinner-border-sm me-1"></span> Saving...');
 
                 $.ajax({
                     type: 'POST',
@@ -839,10 +1072,15 @@
                     dataType: 'json',
                     contentType: false,
                     processData: false,
-                    headers: {'X-CSRF-TOKEN': form.find('input[name="_token"]').val()},
-                    success: function (response) {
+                    headers: {
+                        'X-CSRF-TOKEN': form.find('input[name="_token"]').val()
+                    },
+                    success: function(response) {
                         if (window.iziToast) {
-                            iziToast.success({title: 'Success', message: response.message});
+                            iziToast.success({
+                                title: 'Success',
+                                message: response.message
+                            });
                         } else {
                             Swal.fire('Success', response.message, 'success');
                         }
@@ -852,35 +1090,65 @@
                             window.location.href = response.redirect;
                         }
                     },
-                    error: function (xhr) {
+                    error: function(xhr) {
                         form.data('update-confirmed', false);
                         const errors = xhr.responseJSON?.errors;
-                        $('#reelStatusAfterUsageError').text(errors?.reel_status_after_usage?.[0] || '');
-                        const message = errors
-                            ? Object.values(errors).flat()[0]
-                            : (xhr.responseJSON?.message || 'Unable to save production.');
+                        if (errors?.remaining_weight_kg) {
+                            $('#remainingWeightError').text(errors.remaining_weight_kg[0]);
+                            $('#updateProductionModal').modal('show');
+                        }
+                        $('#reelStatusAfterUsageError').text(errors?.reel_status_after_usage?.[
+                            0
+                        ] || '');
+                        const message = errors ?
+                            Object.values(errors).flat()[0] :
+                            (xhr.responseJSON?.message || 'Unable to save production.');
                         if (window.iziToast) {
-                            iziToast.error({title: 'Error', message: message});
+                            iziToast.error({
+                                title: 'Error',
+                                message: message
+                            });
                         } else {
                             Swal.fire('Error', message, 'error');
                         }
                     },
-                    complete: function () {
+                    complete: function() {
                         button.prop('disabled', false).html(originalHtml);
                     }
                 });
             });
 
-            $('.reel-result-option').on('change', function () {
-                $('#productionWastageSummary').toggleClass('d-none', this.value !== 'finished');
+            $('.reel-result-option').on('change', function() {
+                $('#productionWastageSummary').toggleClass('d-none', latestCutCalculation?.weightBased ||
+                    this.value !== 'finished');
+                const showWeight = Boolean(latestCutCalculation?.weightBased && this.value === 'bit');
+                $('#productionWeightFields').toggleClass('d-none', !showWeight);
+                $('#remaining_weight_kg').prop('disabled', !showWeight).prop('required', showWeight).val(
+                    '');
+                $('#remainingWeightError').empty();
             });
-            $('#confirmProductionUpdate').on('click', function () {
+            $('#confirmProductionUpdate').on('click', function() {
                 const result = $('input[name="modal_reel_result"]:checked').val();
                 if (!result) {
                     Swal.fire('Required', 'Choose Bit or Finished.', 'warning');
                     return;
                 }
                 $('#reel_status_after_usage').val(result);
+                if (latestCutCalculation?.weightBased) {
+                    if (result === 'bit') {
+                        const raw = $('#remaining_weight_kg').val();
+                        const weight = Number(raw);
+                        if (!raw || !$('#remaining_weight_kg')[0].checkValidity() || !Number.isFinite(
+                                weight) || weight <= 0 || weight > latestCutCalculation.availableWeight) {
+                            $('#remainingWeightError').text(
+                                'Enter a positive remaining weight within the available balance.');
+                            return;
+                        }
+                        $('#production_remaining_weight_kg').val(weight).prop('disabled', false);
+                    } else {
+                        $('#production_remaining_weight_kg').val(0).prop('disabled', false);
+                    }
+                }
                 $('#reel_status_selection_type').val('manual');
                 $('#updateProductionModal').modal('hide');
                 $('#productionForm').data('update-confirmed', true).trigger('submit');

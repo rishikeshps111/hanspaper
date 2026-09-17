@@ -17,6 +17,7 @@ class Reel extends Model
         'reel_gsm_id',
         'width',
         'length',
+        'weight_kg',
         'unit_price',
         'selling_price',
         'is_active',
@@ -26,10 +27,26 @@ class Reel extends Model
     protected $casts = [
         'width' => 'decimal:2',
         'length' => 'decimal:2',
+        'weight_kg' => 'decimal:2',
         'unit_price' => 'decimal:2',
         'selling_price' => 'decimal:2',
         'is_active' => 'boolean',
     ];
+
+    public function isWeightBased(): bool
+    {
+        return $this->type?->volume === 'weight';
+    }
+
+    public function measurementUnit(): string
+    {
+        return $this->isWeightBased() ? 'kg' : 'm';
+    }
+
+    public function nominalMeasure(): float
+    {
+        return (float) ($this->isWeightBased() ? $this->weight_kg : $this->length);
+    }
 
     public function brand(): BelongsTo
     {

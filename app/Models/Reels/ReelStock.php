@@ -18,6 +18,8 @@ class ReelStock extends Model
         'reel_warehouse_id',
         'original_length',
         'balance_length',
+        'original_weight_kg',
+        'balance_weight_kg',
         'cut_width',
         'purchase_price',
         'status',
@@ -28,6 +30,8 @@ class ReelStock extends Model
     protected $casts = [
         'original_length' => 'decimal:3',
         'balance_length' => 'decimal:3',
+        'original_weight_kg' => 'decimal:3',
+        'balance_weight_kg' => 'decimal:3',
         'cut_width' => 'decimal:3',
         'purchase_price' => 'decimal:2',
         'is_active' => 'boolean',
@@ -71,6 +75,28 @@ class ReelStock extends Model
     public function usages(): HasMany
     {
         return $this->hasMany(ReelStockUsage::class);
+    }
+
+    public function isWeightBased(): bool
+    {
+        return $this->reel->isWeightBased();
+    }
+
+    public function availableBalance(): float
+    {
+        return $this->isWeightBased() ? (float) $this->balance_weight_kg : $this->actualBalanceLength();
+    }
+
+    public function originalMeasure(): float
+    {
+        return (float) ($this->isWeightBased() ? $this->original_weight_kg : $this->original_length);
+    }
+
+    public function weightMovement(float $amount, float $before, float $after): array
+    {
+        return $this->isWeightBased() ? [
+            'weight_kg' => $amount, 'weight_before_kg' => $before, 'weight_after_kg' => $after,
+        ] : [];
     }
 
     public function actualBalanceLength(): float

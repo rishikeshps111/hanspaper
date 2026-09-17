@@ -78,7 +78,7 @@
                                             <th>Type</th>
                                             <th>GSM</th>
                                             <th>Width (mm)</th>
-                                            <th>Length (m)</th>
+                                            <th>Length / Weight</th>
                                             <th>Unit Price</th>
                                             <th>Selling Price</th>
                                             <th>Stocks</th>
@@ -221,7 +221,7 @@
                                     class="text-danger">*</span></label><select name="reel_type_id"
                                 class="form-select correction-select" required>
                                 @foreach ($types as $type)
-                                    <option value="{{ $type->id }}">{{ $type->name }}</option>
+                                    <option value="{{ $type->id }}" data-volume="{{ $type->volume }}">{{ $type->name }}</option>
                                 @endforeach
                             </select>
                             <div class="invalid-feedback" data-error="reel_type_id"></div>
@@ -244,6 +244,10 @@
                                     class="text-danger">*</span></label><input type="number" step="0.01" name="length"
                                 class="form-control" required>
                             <div class="invalid-feedback" data-error="length"></div>
+                        </div>
+                        <div class="col-md-3" id="correctionWeightField"><label class="form-label">Nominal Weight (kg) <span class="text-danger">*</span></label>
+                            <input type="number" step="0.01" min="0.01" name="weight_kg" class="form-control">
+                            <div class="invalid-feedback" data-error="weight_kg"></div>
                         </div>
                         <div class="col-md-3"><label class="form-label">Unit Price <span
                                     class="text-danger">*</span></label><input type="number" step="0.01" name="unit_price"
@@ -282,6 +286,13 @@
     <script src="{{ versionedAsset('assets/plugins/datatable/js/dataTables.bootstrap5.min.js') }}"></script>
     <script>
         $(function () {
+            function updateCorrectionMeasure() {
+                const form = $('#reelCorrectionForm');
+                const weight = form.find('[name=reel_type_id] option:selected').data('volume') === 'weight';
+                form.find('[name=length]').prop('required', !weight).prop('disabled', weight).closest('.col-md-3').toggle(!weight);
+                form.find('[name=weight_kg]').prop('required', weight).prop('disabled', !weight).closest('.col-md-3').toggle(weight);
+            }
+            $('#reelCorrectionForm [name=reel_type_id]').on('change', updateCorrectionMeasure);
             const urls = {
                 batches: @json(route('reels.corrections.stock-batches', [], false)),
                 correct: @json(route('reels.corrections.stock', [], false)),
@@ -322,6 +333,7 @@
             const setCorrectionLoading = (form, loading) => {
                 form.find('.correction-loading').toggleClass('d-none', !loading).toggleClass('d-flex', loading);
                 form.find('input,select,textarea,button').prop('disabled', loading);
+                if (!loading) updateCorrectionMeasure();
             };
             const batchTable = $('#batchTable').DataTable({
                 processing: true,
@@ -455,6 +467,7 @@
                         if (input.is('select')) input.trigger('change.select2');
                     });
                     $('#reelCorrectionModal .modal-title').text('Correct ' + r.code);
+                    updateCorrectionMeasure();
                     $('#reelCorrectionModal').modal('show');
                 });
             });

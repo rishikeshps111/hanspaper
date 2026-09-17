@@ -36,7 +36,7 @@ class FinishedReelController extends Controller
             ->where('stock_status', 'finished')->latest('created_at')->limit(1);
 
         $query = ReelStock::query()
-            ->with(['reel.brand:id,name', 'reel.type:id,name', 'reel.gsm:id,gsm', 'provider:id,name', 'warehouse:id,name'])
+            ->with(['reel.brand:id,name', 'reel.type:id,name,volume', 'reel.gsm:id,gsm', 'provider:id,name', 'warehouse:id,name'])
             ->where('reel_stocks.status', 'finished')->select('reel_stocks.*')
             ->addSelect(['finished_at' => $finishedAt()])
             ->when($request->filled('reel_id'), fn ($q) => $q->where('reel_stocks.reel_id', $request->integer('reel_id')))
@@ -61,7 +61,8 @@ class FinishedReelController extends Controller
             ->addColumn('provider_name', fn (ReelStock $stock) => $stock->provider?->name ?? '—')
             ->addColumn('warehouse_name', fn (ReelStock $stock) => $stock->warehouse?->name ?? '—')
             ->editColumn('actual_code', fn (ReelStock $stock) => $stock->actual_code ?: '—')
-            ->editColumn('original_length', fn (ReelStock $stock) => $this->measurement($stock->original_length))
+            ->editColumn('original_length', fn (ReelStock $stock) => $this->measurement($stock->originalMeasure()) . ' ' . $stock->reel->measurementUnit())
+            ->orderColumn('original_length', 'COALESCE(reel_stocks.original_weight_kg, reel_stocks.original_length) $1')
             ->editColumn('created_at', fn (ReelStock $stock) => $stock->created_at?->format('d M Y h:i a') ?? '—')
             ->editColumn('finished_at', fn (ReelStock $stock) => $stock->finished_at
                 ? date('d M Y h:i a', strtotime($stock->finished_at))

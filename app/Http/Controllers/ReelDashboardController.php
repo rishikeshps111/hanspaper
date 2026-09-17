@@ -41,7 +41,7 @@ class ReelDashboardController extends Controller
     {
         $warehouses = ReelWarehouse::where('is_active', true)->orderBy('name')->get(['id', 'name']);
         $stocks = ReelStock::query()
-            ->with(['reel.brand:id,name', 'reel.type:id,name', 'reel.gsm:id,gsm'])
+            ->with(['reel.brand:id,name', 'reel.type:id,name,volume', 'reel.gsm:id,gsm'])
             ->where('is_active', true)
             ->whereIn('status', ['full', 'bit'])
             ->when($request->filled('reel_brand_id'), fn ($query) =>
@@ -53,7 +53,9 @@ class ReelDashboardController extends Controller
             ->when($request->filled('width'), fn ($query) =>
                 $query->whereHas('reel', fn ($reel) => $reel->where('width', round((float) $request->input('width'), 2))))
             ->when($request->filled('length'), fn ($query) =>
-                $query->whereHas('reel', fn ($reel) => $reel->where('length', round((float) $request->input('length'), 2))))
+                $query->whereHas('reel', fn ($reel) => $reel->where(fn ($measure) => $measure
+                    ->where('length', round((float) $request->input('length'), 2))
+                    ->orWhere('weight_kg', round((float) $request->input('length'), 2)))))
             ->get();
 
         $rows = $stocks->groupBy('reel_id')
@@ -68,7 +70,7 @@ class ReelDashboardController extends Controller
                     'type_name' => $reel->type?->name ?? '—',
                     'gsm_value' => $reel->gsm?->gsm ?? '—',
                     'width' => $this->compactNumber($reel->width),
-                    'length' => $this->compactNumber($reel->length),
+                    'length' => $this->compactNumber($reel->nominalMeasure()) . ' ' . $reel->measurementUnit(),
                 ];
 
                 foreach ($warehouses as $warehouse) {
@@ -102,7 +104,7 @@ class ReelDashboardController extends Controller
     public function stocks(Request $request, Reel $reel): JsonResponse
     {
         $query = ReelStock::query()
-            ->with(['provider:id,name', 'warehouse:id,name', 'reel:id,width'])
+            ->with(['provider:id,name', 'warehouse:id,name', 'reel.type'])
             ->where('reel_id', $reel->id)
             ->where('is_active', true)
             ->whereIn('status', ['full', 'bit'])
@@ -119,7 +121,7 @@ class ReelDashboardController extends Controller
                 $stock->id . '" data-status="' . e($stock->status) . '" data-price="' . e($reel->selling_price) .
                 '" data-code="' . e($stock->stock_code) . '" data-actual-code="' . e($stock->actual_code ?? '') .
                 '" data-reel-code="' . e($reel->code) . '" data-provider="' . e($stock->provider?->name ?? '—') .
-                '" data-actual-balance-length="' . e(number_format($stock->actualBalanceLength(), 2, '.', '')) .
+                '" data-measurement-unit="' . e($stock->reel->measurementUnit()) . '" data-actual-balance-length="' . e(number_format($stock->availableBalance(), 2, '.', '')) .
                 '" data-added-date="' . e($stock->created_at?->format('d M Y h:i a') ?? '—') . '">')
             ->editColumn('actual_code', fn (ReelStock $stock) => $stock->actual_code ?: '—')
             ->addColumn('provider_name', fn (ReelStock $stock) => $stock->provider?->name ?? '—')
@@ -130,7 +132,7 @@ class ReelDashboardController extends Controller
                 $stock->id . '" data-code="' . e($stock->actual_code ?? '') . '" title="Edit Actual Code"><i class="bx bx-edit"></i></button>' .
                 '<button type="button" class="btn btn-sm btn-outline-dark dashboard-stock-action print-dashboard-stock" data-code="' . e($stock->stock_code) .
                 '" data-reel-code="' . e($reel->code) . '" data-provider="' . e($stock->provider?->name ?? '—') .
-                '" data-status="' . e($stock->status) . '" data-actual-balance-length="' . e(number_format($stock->actualBalanceLength(), 2, '.', '')) .
+                '" data-status="' . e($stock->status) . '" data-measurement-unit="' . e($stock->reel->measurementUnit()) . '" data-actual-balance-length="' . e(number_format($stock->availableBalance(), 2, '.', '')) .
                 '" data-added-date="' . e($stock->created_at?->format('d M Y h:i a') ?? '—') .
                 '" title="Print Barcode"><i class="bx bx-barcode"></i></button></div>')
             ->rawColumns(['select', 'action'])->toJson();
@@ -165,6 +167,7 @@ class ReelDashboardController extends Controller
                         'batch_uuid' => $batchUuid, 'reel_stock_id' => $stock->id,
                         'transaction_type' => $type, 'stock_status' => $stock->status,
                         'length' => $balance, 'balance_before' => $balance, 'balance_after' => $balance,
+                        ...$stock->weightMovement((float) $stock->balance_weight_kg, (float) $stock->balance_weight_kg, (float) $stock->balance_weight_kg),
                         'reel_warehouse_id' => $warehouseId, 'remarks' => 'Warehouse transfer from Reel Dashboard',
                         'created_by' => auth()->id(), 'created_at' => now(),
                     ]);
@@ -210,15 +213,18 @@ class ReelDashboardController extends Controller
             $batchUuid = (string) Str::uuid();
             foreach ($stocks as $stock) {
                 $before = (float) $stock->balance_length;
+                $weightMovement = $stock->weightMovement((float) $stock->balance_weight_kg, (float) $stock->balance_weight_kg, 0);
                 ReelSaleItem::create([
                     'reel_sale_id' => $sale->id, 'reel_stock_id' => $stock->id,
+                    ...$weightMovement,
                     'length' => $before, 'unit_price' => $unitPrice, 'discount' => 0,
                     'total' => $unitPrice, 'balance_before' => $before, 'balance_after' => 0,
                 ]);
-                $stock->update(['balance_length' => 0, 'status' => 'sold']);
+                $stock->update(['balance_length' => 0, 'balance_weight_kg' => $stock->isWeightBased() ? 0 : null, 'status' => 'sold']);
                 ReelStockMovement::create([
                     'batch_uuid' => $batchUuid, 'reel_stock_id' => $stock->id,
                     'transaction_type' => 'sale', 'stock_status' => 'full',
+                    ...$weightMovement,
                     'length' => $before, 'balance_before' => $before, 'balance_after' => 0,
                     'reference_type' => ReelSale::class, 'reference_id' => $sale->id,
                     'customer_id' => $sale->customer_id, 'reel_warehouse_id' => $stock->reel_warehouse_id,

@@ -73,7 +73,7 @@
                                 class="text-danger">*</span></label><select name="reel_type_id" id="quickReelType"
                             class="form-select w-100" required>
                             <option value=""></option>@foreach($types as $item)
-                            <option value="{{ $item->id }}">{{ $item->name }}</option>@endforeach
+                            <option value="{{ $item->id }}" data-volume="{{ $item->volume }}">{{ $item->name }}</option>@endforeach
                         </select></div>
                     <div class="col-md-4"><label class="form-label">GSM <span
                                 class="text-danger">*</span></label><select name="reel_gsm_id" id="quickReelGsm"
@@ -84,7 +84,7 @@
                     <div class="col-md-6"><label class="form-label">Width (mm) <span
                                 class="text-danger">*</span></label><input type="number" name="width"
                             class="form-control" min="0.01" step="0.01" required></div>
-                    <div class="col-md-6"><label class="form-label">Length (m) <span
+                    <div class="col-md-6"><label class="form-label"><span id="quickMeasureLabel">Length (m)</span> <span
                                 class="text-danger">*</span></label><input type="number" name="length"
                             class="form-control" min="0.01" step="0.01" required></div>
                     <div class="col-md-6"><label class="form-label">Unit Price <span

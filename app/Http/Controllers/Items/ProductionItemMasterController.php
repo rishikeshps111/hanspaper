@@ -209,10 +209,10 @@ class ProductionItemMasterController extends Controller
         $perPage = 20;
 
         $query = ReelStock::query()
-            ->with(['reel:id,code,width', 'warehouse:id,name', 'provider:id,name'])
+            ->with(['reel.type', 'warehouse:id,name', 'provider:id,name'])
             ->where('is_active', true)
             ->whereIn('status', ['full', 'bit'])
-            ->where('balance_length', '>', 0)
+            ->where(fn ($q) => $q->where('balance_length', '>', 0)->orWhere('balance_weight_kg', '>', 0))
             ->whereDoesntHave('activeProductionRun')
             ->when($term !== '', function ($query) use ($term) {
                 $query->where(function ($query) use ($term) {
@@ -237,7 +237,7 @@ class ProductionItemMasterController extends Controller
                 $actualLength = $stock->status === 'bit' && $widthSplits > 0
                     ? $balance / $widthSplits
                     : $balance;
-                $lengthLabel = number_format($actualLength, 2) . ' m';
+                $lengthLabel = number_format($stock->availableBalance(), 2) . ' ' . $stock->reel->measurementUnit();
 
                 return [
                     'id' => $stock->id,
@@ -252,6 +252,8 @@ class ProductionItemMasterController extends Controller
                     'status' => $stock->status,
                     'width' => $sourceWidth,
                     'balance' => $balance,
+                    'volume' => $stock->reel->type->volume,
+                    'balance_weight_kg' => $stock->balance_weight_kg,
                     'cut_width' => $cutWidth,
                     'width_splits' => $widthSplits,
                     'actual_length' => round($actualLength, 3),
@@ -897,7 +899,7 @@ class ProductionItemMasterController extends Controller
                 $stock = ReelStock::with('reel')->lockForUpdate()->findOrFail($validated['reel_stock_id']);
                 $machine = Machine::lockForUpdate()->findOrFail($validated['machines']);
                 $core = Core::lockForUpdate()->findOrFail($validated['core_id']);
-                if (!$stock->is_active || !in_array($stock->status, ['full', 'bit'], true) || (float) $stock->balance_length <= 0) {
+                if (!$stock->is_active || !in_array($stock->status, ['full', 'bit'], true) || $stock->availableBalance() <= 0) {
                     throw ValidationException::withMessages(['reel_stock_id' => 'Only an available Full or Bit reel with balance can be started.']);
                 }
                 if ($machine->status !== 'Active') {
@@ -960,7 +962,7 @@ class ProductionItemMasterController extends Controller
             $stock = ReelStock::with('reel')->lockForUpdate()->findOrFail($data['reel_stock_id']);
             $machine = Machine::lockForUpdate()->findOrFail($data['machines']);
             $core = Core::lockForUpdate()->findOrFail($data['core_id']);
-            if (!$stock->is_active || !in_array($stock->status, ['full', 'bit']) || $stock->balance_length <= 0) {
+            if (!$stock->is_active || !in_array($stock->status, ['full', 'bit']) || $stock->availableBalance() <= 0) {
                 throw ValidationException::withMessages(['reel_stock_id' => 'Choose an available Full or Bit reel.']);
             }
             if ($machine->status !== 'Active') throw ValidationException::withMessages(['machines' => 'Choose an active machine.']);
@@ -973,7 +975,7 @@ class ProductionItemMasterController extends Controller
             $length = round((float) $data['roll_length'], 3);
             if ($width > (float) $stock->reel->width) throw ValidationException::withMessages(['output_roll_width' => 'Output width must fit the reel width.']);
             $splits = max(1, (int) floor((float) $stock->reel->width / $width));
-            if ($length > $stock->actualBalanceLength() * $splits) throw ValidationException::withMessages(['roll_length' => 'Roll length exceeds available capacity.']);
+            if (!$stock->isWeightBased() && $length > $stock->actualBalanceLength() * $splits) throw ValidationException::withMessages(['roll_length' => 'Roll length exceeds available capacity.']);
             $changes = ['reel_stock_id' => $stock->id, 'machine_id' => $machine->id, 'production_user_id' => $data['packed_by'],
                 'core_id' => $core->id, 'output_roll_width' => $width, 'roll_length' => $length, 'source_reel_status' => $stock->status];
             $history = json_decode($run->getRawOriginal('correction_history') ?: '[]', true);
@@ -995,6 +997,7 @@ class ProductionItemMasterController extends Controller
             'production_qty' => ['required', 'integer', 'min:1'],
             'reel_status_after_usage' => ['required', 'in:bit,finished'],
             'reel_status_selection_type' => ['required', 'in:automatic,manual'],
+            'remaining_weight_kg' => ['exclude_if:reel_status_after_usage,finished', 'nullable', 'numeric', 'min:0', 'max:999999999.999', 'decimal:0,3'],
         ]);
 
         if ($validator->fails()) {
@@ -1040,39 +1043,53 @@ class ProductionItemMasterController extends Controller
                 $excessStockQuantity = max(0, $productionQuantity - $orderQuantity);
                 $newTotal = $totalProducedQty + $orderQuantity;
 
-                $previousCutWidth = round((float) ($stock->cut_width ?? 0), 3);
-                $previousWidthSplits = $previousCutWidth > 0
-                    ? max(1, (int) floor($sourceWidth / $previousCutWidth))
-                    : 1;
-                $physicalAvailableLength = $stock->status === 'bit' && $previousCutWidth > 0
-                    ? round((float) $stock->balance_length / $previousWidthSplits, 3)
-                    : round((float) $stock->balance_length, 3);
-                $balanceBefore = round($physicalAvailableLength * $rollCount, 3);
-                $consumedLength = round($productionQuantity * $rollLength, 3);
-                if ($consumedLength > $balanceBefore) {
-                    $possibleQuantity = (int) floor($balanceBefore / $rollLength);
-                    throw ValidationException::withMessages([
-                        'production_qty' => "Only {$possibleQuantity} roll(s) can be produced from the available {$balanceBefore} m.",
-                    ]);
-                }
+                $weightUsage = [];
+                if ($stock->isWeightBased()) {
+                    $resultingStatus = $request->input('reel_status_after_usage');
+                    $weightUsage = \App\Services\ReelWeightUsage::calculate(
+                        (float) $stock->balance_weight_kg, $resultingStatus, $request->input('remaining_weight_kg')
+                    );
+                    $calculatedStatus = null;
+                    $statusSelectionType = 'manual';
+                    $sourceStatus = $stock->status;
+                    $balanceBefore = $consumedLength = $balanceAfter = $totalOutputLength = 0;
+                    $physicalRemainingLength = $wastageOutputLength = $physicalWastageLength = $stockBalanceAfter = 0;
+                    $widthWaste = round($sourceWidth - ($outputWidth * $rollCount), 3);
+                } else {
+                    $previousCutWidth = round((float) ($stock->cut_width ?? 0), 3);
+                    $previousWidthSplits = $previousCutWidth > 0
+                        ? max(1, (int) floor($sourceWidth / $previousCutWidth))
+                        : 1;
+                    $physicalAvailableLength = $stock->status === 'bit' && $previousCutWidth > 0
+                        ? round((float) $stock->balance_length / $previousWidthSplits, 3)
+                        : round((float) $stock->balance_length, 3);
+                    $balanceBefore = round($physicalAvailableLength * $rollCount, 3);
+                    $consumedLength = round($productionQuantity * $rollLength, 3);
+                    if ($consumedLength > $balanceBefore) {
+                        $possibleQuantity = (int) floor($balanceBefore / $rollLength);
+                        throw ValidationException::withMessages([
+                            'production_qty' => "Only {$possibleQuantity} roll(s) can be produced from the available {$balanceBefore} m.",
+                        ]);
+                    }
 
-                $balanceAfter = round($balanceBefore - $consumedLength, 3);
-                $calculatedStatus = $balanceAfter <= 0 ? 'finished' : 'bit';
-                $resultingStatus = $request->input('reel_status_after_usage');
-                if ($resultingStatus === 'bit' && $balanceAfter <= 0) {
-                    throw ValidationException::withMessages([
-                        'reel_status_after_usage' => 'Bit cannot be selected because no usable balance remains.',
-                    ]);
+                    $balanceAfter = round($balanceBefore - $consumedLength, 3);
+                    $calculatedStatus = $balanceAfter <= 0 ? 'finished' : 'bit';
+                    $resultingStatus = $request->input('reel_status_after_usage');
+                    if ($resultingStatus === 'bit' && $balanceAfter <= 0) {
+                        throw ValidationException::withMessages([
+                            'reel_status_after_usage' => 'Bit cannot be selected because no usable balance remains.',
+                        ]);
+                    }
+                    $statusSelectionType = $request->input('reel_status_selection_type') === 'manual' ||
+                        $resultingStatus !== $calculatedStatus ? 'manual' : 'automatic';
+                    $sourceStatus = $stock->status;
+                    $totalOutputLength = $balanceBefore;
+                    $widthWaste = round($sourceWidth - ($outputWidth * $rollCount), 3);
+                    $physicalRemainingLength = round($balanceAfter / $rollCount, 3);
+                    $wastageOutputLength = $resultingStatus === 'finished' ? $balanceAfter : 0;
+                    $physicalWastageLength = $resultingStatus === 'finished' ? $physicalRemainingLength : 0;
+                    $stockBalanceAfter = $resultingStatus === 'finished' ? 0 : $balanceAfter;
                 }
-                $statusSelectionType = $request->input('reel_status_selection_type') === 'manual' ||
-                    $resultingStatus !== $calculatedStatus ? 'manual' : 'automatic';
-                $sourceStatus = $stock->status;
-                $totalOutputLength = $balanceBefore;
-                $widthWaste = round($sourceWidth - ($outputWidth * $rollCount), 3);
-                $physicalRemainingLength = round($balanceAfter / $rollCount, 3);
-                $wastageOutputLength = $resultingStatus === 'finished' ? $balanceAfter : 0;
-                $physicalWastageLength = $resultingStatus === 'finished' ? $physicalRemainingLength : 0;
-                $stockBalanceAfter = $resultingStatus === 'finished' ? 0 : $balanceAfter;
 
                 $productionList = ProductionList::create([
                     'production_item_master_id' => $production->id,
@@ -1101,6 +1118,7 @@ class ProductionItemMasterController extends Controller
                 }
 
                 ReelStockUsage::create([
+                    ...$weightUsage,
                     'production_id' => $production->id,
                     'production_run_id' => $run->id,
                     'production_list_id' => $productionList->id,
@@ -1129,6 +1147,7 @@ class ProductionItemMasterController extends Controller
                 ]);
 
                 $stock->update([
+                    'balance_weight_kg' => $stock->isWeightBased() ? ($resultingStatus === 'bit' ? $weightUsage['remaining_weight_kg'] : 0) : null,
                     'balance_length' => $stockBalanceAfter,
                     'cut_width' => $outputWidth,
                     'status' => $resultingStatus,
@@ -1137,6 +1156,7 @@ class ProductionItemMasterController extends Controller
                     'batch_uuid' => (string) Str::uuid(),
                     'reel_stock_id' => $stock->id,
                     'transaction_type' => 'production_usage',
+                    ...$stock->weightMovement($weightUsage['consumed_weight_kg'] ?? 0, $weightUsage['weight_before_kg'] ?? 0, $weightUsage['remaining_weight_kg'] ?? 0),
                     'stock_status' => $sourceStatus,
                     'length' => $consumedLength,
                     'balance_before' => $balanceBefore,
@@ -1144,7 +1164,9 @@ class ProductionItemMasterController extends Controller
                     'reference_type' => ProductionItemMaster::class,
                     'reference_id' => $production->id,
                     'reel_warehouse_id' => $stock->reel_warehouse_id,
-                    'remarks' => "{$productionQuantity} roll(s) × {$rollLength} m used at {$outputWidth} mm width. Status set to " . ucfirst($resultingStatus) . '.',
+                    'remarks' => $stock->isWeightBased()
+                        ? "{$productionQuantity} roll(s) produced; {$weightUsage['consumed_weight_kg']} kg used. Status set to " . ucfirst($resultingStatus) . '.'
+                        : "{$productionQuantity} roll(s) × {$rollLength} m used at {$outputWidth} mm width. Status set to " . ucfirst($resultingStatus) . '.',
                     'created_by' => auth()->id(),
                     'created_at' => now(),
                 ]);
@@ -1156,6 +1178,19 @@ class ProductionItemMasterController extends Controller
                         'reference_type' => ProductionItemMaster::class, 'reference_id' => $production->id,
                         'reel_warehouse_id' => $stock->reel_warehouse_id,
                         'remarks' => "Finished reel: {$wastageOutputLength} m output length ({$physicalWastageLength} m actual physical length) recorded as wastage.",
+                        'created_by' => auth()->id(), 'created_at' => now(),
+                    ]);
+                }
+
+                if (($weightUsage['wastage_weight_kg'] ?? 0) > 0) {
+                    ReelStockMovement::create([
+                        'batch_uuid' => (string) Str::uuid(), 'reel_stock_id' => $stock->id,
+                        'transaction_type' => 'production_wastage', 'stock_status' => 'finished',
+                        'length' => 0, 'balance_before' => 0, 'balance_after' => 0,
+                        ...$stock->weightMovement($weightUsage['wastage_weight_kg'], $weightUsage['remaining_weight_kg'], 0),
+                        'reference_type' => ProductionItemMaster::class, 'reference_id' => $production->id,
+                        'reel_warehouse_id' => $stock->reel_warehouse_id,
+                        'remarks' => 'Measured remaining weight discarded after production.',
                         'created_by' => auth()->id(), 'created_at' => now(),
                     ]);
                 }
@@ -1198,7 +1233,8 @@ class ProductionItemMasterController extends Controller
                     'provider' => $stock->provider?->name ?? '—',
                     'stock_added_date' => $stock->created_at?->format('d M Y h:i a') ?? '—',
                     'status' => 'bit',
-                    'actual_balance_length' => number_format($stock->actualBalanceLength(), 2, '.', ''),
+                    'actual_balance_length' => number_format($stock->availableBalance(), 2, '.', ''),
+                    'measurement_unit' => $stock->reel->measurementUnit(),
                 ];
             });
 

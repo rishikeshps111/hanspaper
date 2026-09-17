@@ -72,9 +72,11 @@ class ReelStockCorrectionController extends Controller
 
     public function reels(Request $request): JsonResponse
     {
-        $query = Reel::with(['brand:id,name', 'type:id,name', 'gsm:id,gsm'])->withCount('stocks')->latest();
+        $query = Reel::with(['brand:id,name', 'type:id,name,volume', 'gsm:id,gsm'])->withCount('stocks')->latest();
         return DataTables::eloquent($query)
             ->addColumn('brand_name', fn (Reel $reel) => $reel->brand?->name ?? '—')
+            ->editColumn('length', fn (Reel $reel) => number_format($reel->nominalMeasure(), 2) . ' ' . $reel->measurementUnit())
+            ->orderColumn('length', 'COALESCE(reels.weight_kg, reels.length) $1')
             ->addColumn('type_name', fn (Reel $reel) => $reel->type?->name ?? '—')
             ->addColumn('gsm_value', fn (Reel $reel) => $reel->gsm?->gsm ?? '—')
             ->editColumn('is_active', fn (Reel $reel) => (int) $reel->is_active)
@@ -85,7 +87,7 @@ class ReelStockCorrectionController extends Controller
     public function reel(Reel $reel): JsonResponse
     {
         return response()->json(['reel' => $reel->only([
-            'id', 'code', 'reel_brand_id', 'reel_type_id', 'reel_gsm_id', 'width', 'length',
+            'id', 'code', 'reel_brand_id', 'reel_type_id', 'reel_gsm_id', 'width', 'length', 'weight_kg',
             'unit_price', 'selling_price', 'is_active', 'remarks',
         ])]);
     }
@@ -137,6 +139,9 @@ class ReelStockCorrectionController extends Controller
             }
 
             $targetReel = Reel::lockForUpdate()->findOrFail($data['reel_id']);
+            if ($stocks->first()->reel->isWeightBased() !== $targetReel->isWeightBased()) {
+                throw ValidationException::withMessages(['reel_id' => 'Stock cannot be reassigned between length and weight types. Correct the unused quantity and add stock under the correct reel.']);
+            }
             $affectedCodes = [];
             if ($assignmentChanged) {
                 foreach ($currentStocks as $stock) {
@@ -144,16 +149,19 @@ class ReelStockCorrectionController extends Controller
                         'reel_id' => $targetReel->id,
                         'reel_provider_id' => $data['reel_provider_id'],
                         'reel_warehouse_id' => $data['reel_warehouse_id'],
-                        'original_length' => $targetReel->length,
-                        'balance_length' => $targetReel->length,
+                        'original_length' => $targetReel->length ?? 0,
+                        'balance_length' => $targetReel->length ?? 0,
+                        'original_weight_kg' => $targetReel->isWeightBased() ? $targetReel->weight_kg : null,
+                        'balance_weight_kg' => $targetReel->isWeightBased() ? $targetReel->weight_kg : null,
                         'purchase_price' => $targetReel->unit_price,
                     ]);
                     ReelStockMovement::where('reel_stock_id', $stock->id)
                         ->where('transaction_type', 'opening')->update([
                             'reel_provider_id' => $data['reel_provider_id'],
                             'reel_warehouse_id' => $data['reel_warehouse_id'],
-                            'length' => $targetReel->length,
-                            'balance_after' => $targetReel->length,
+                            'length' => $targetReel->length ?? 0,
+                            'balance_after' => $targetReel->length ?? 0,
+                            ...$stock->weightMovement((float) $stock->original_weight_kg, 0, (float) $stock->balance_weight_kg),
                         ]);
                     $affectedCodes[] = $stock->stock_code;
                 }
@@ -164,7 +172,9 @@ class ReelStockCorrectionController extends Controller
                     $stock = ReelStock::create([
                         'stock_code' => $this->nextStockCode(), 'reel_id' => $targetReel->id,
                         'reel_provider_id' => $data['reel_provider_id'], 'reel_warehouse_id' => $data['reel_warehouse_id'],
-                        'original_length' => $targetReel->length, 'balance_length' => $targetReel->length,
+                        'original_length' => $targetReel->length ?? 0, 'balance_length' => $targetReel->length ?? 0,
+                        'original_weight_kg' => $targetReel->isWeightBased() ? $targetReel->weight_kg : null,
+                        'balance_weight_kg' => $targetReel->isWeightBased() ? $targetReel->weight_kg : null,
                         'purchase_price' => $targetReel->unit_price, 'status' => 'full', 'is_active' => true,
                     ]);
                     ReelStockMovement::create([
@@ -174,6 +184,7 @@ class ReelStockCorrectionController extends Controller
                         'balance_before' => 0, 'balance_after' => $stock->balance_length,
                         'reel_warehouse_id' => $stock->reel_warehouse_id,
                         'remarks' => 'Added through stock quantity correction: ' . $data['reason'],
+                        ...$stock->weightMovement((float) $stock->original_weight_kg, 0, (float) $stock->balance_weight_kg),
                         'created_by' => auth()->id(), 'created_at' => now(),
                     ]);
                     $affectedCodes[] = $stock->stock_code;
@@ -197,6 +208,7 @@ class ReelStockCorrectionController extends Controller
                         'balance_before' => $stock->balance_length, 'balance_after' => $stock->balance_length,
                         'reel_warehouse_id' => $stock->reel_warehouse_id,
                         'remarks' => 'Voided through stock quantity correction: ' . $data['reason'],
+                        ...$stock->weightMovement(0, (float) $stock->balance_weight_kg, (float) $stock->balance_weight_kg),
                         'created_by' => auth()->id(), 'created_at' => now(),
                     ]);
                 }
@@ -223,12 +235,14 @@ class ReelStockCorrectionController extends Controller
 
     public function updateReel(Request $request, Reel $reel): JsonResponse
     {
+        $weight = ReelType::find($request->input('reel_type_id'))?->volume === 'weight';
         $data = $request->validate([
             'reel_brand_id' => ['required', 'integer', 'exists:reel_brands,id'],
             'reel_type_id' => ['required', 'integer', 'exists:reel_types,id'],
             'reel_gsm_id' => ['required', 'integer', 'exists:reel_gsms,id'],
             'width' => ['required', 'numeric', 'gt:0', 'decimal:0,2'],
-            'length' => ['required', 'numeric', 'gt:0', 'decimal:0,2'],
+            'length' => [$weight ? 'exclude' : 'required', 'numeric', 'gt:0', 'decimal:0,2', 'max:9999999999.99'],
+            'weight_kg' => [$weight ? 'required' : 'exclude', 'numeric', 'gt:0', 'decimal:0,2', 'max:999999999.999'],
             'unit_price' => ['required', 'numeric', 'min:0'],
             'selling_price' => ['required', 'numeric', 'min:0'],
             'is_active' => ['required', 'boolean'],
@@ -236,15 +250,23 @@ class ReelStockCorrectionController extends Controller
             'reason' => ['required', 'string', 'max:2000'],
         ]);
 
-        DB::transaction(function () use ($data, $reel) {
+        $data['length'] = $data['length'] ?? null;
+        $data['weight_kg'] = $data['weight_kg'] ?? null;
+        DB::transaction(function () use ($data, $reel, $weight) {
             $locked = Reel::lockForUpdate()->findOrFail($reel->id);
-            $before = $locked->only(['code', 'reel_brand_id', 'reel_type_id', 'reel_gsm_id', 'width', 'length', 'unit_price', 'selling_price', 'is_active', 'remarks']);
-            $structural = ['reel_brand_id', 'reel_type_id', 'reel_gsm_id', 'width', 'length'];
-            $structureChanged = collect($structural)->contains(fn ($key) => (string) $before[$key] !== (string) $data[$key]);
+            if ($locked->isWeightBased() !== $weight && $locked->stocks()->withoutGlobalScopes()->exists()) {
+                throw ValidationException::withMessages(['reel_type_id' => 'The measurement mode cannot change after stock has been added.']);
+            }
+            $before = $locked->only(['code', 'reel_brand_id', 'reel_type_id', 'reel_gsm_id', 'width', 'length', 'weight_kg', 'unit_price', 'selling_price', 'is_active', 'remarks']);
+            $structural = ['reel_brand_id', 'reel_type_id', 'reel_gsm_id', 'width', 'length', 'weight_kg'];
+            $structureChanged = collect($structural)->contains(fn ($key) =>
+                in_array($key, ['width', 'length', 'weight_kg'], true)
+                    ? ($before[$key] === null) !== ($data[$key] === null) || (float) $before[$key] !== (float) $data[$key]
+                    : (string) $before[$key] !== (string) $data[$key]);
 
             if ($structureChanged && ReelStock::withoutGlobalScope('not_voided')->where('reel_id', $locked->id)
                 ->where(function ($q) {
-                    $q->where('status', '!=', 'full')->orWhereHas('movements', fn ($m) => $m->where('transaction_type', '!=', 'opening'));
+                    $q->where('status', '!=', 'full')->orWhereHas('productionRuns')->orWhereHas('movements', fn ($m) => $m->where('transaction_type', '!=', 'opening'));
                 })->exists()) {
                 throw ValidationException::withMessages(['reel_brand_id' => 'Brand, type, GSM, width, and length cannot be changed because this reel has stock activity.']);
             }
@@ -260,9 +282,15 @@ class ReelStockCorrectionController extends Controller
             if ($structureChanged) {
                 $stocks = ReelStock::withoutGlobalScope('not_voided')->where('reel_id', $locked->id)->where('status', 'full')->get();
                 foreach ($stocks as $stock) {
-                    $stock->update(['original_length' => $locked->length, 'balance_length' => $locked->length, 'purchase_price' => $locked->unit_price]);
+                    $stock->update([
+                        'original_length' => $locked->length ?? 0, 'balance_length' => $locked->length ?? 0,
+                        'original_weight_kg' => $locked->isWeightBased() ? $locked->weight_kg : null,
+                        'balance_weight_kg' => $locked->isWeightBased() ? $locked->weight_kg : null,
+                        'purchase_price' => $locked->unit_price,
+                    ]);
                     $stock->movements()->where('transaction_type', 'opening')->update([
-                        'length' => $locked->length, 'balance_after' => $locked->length,
+                        'length' => $locked->length ?? 0, 'balance_after' => $locked->length ?? 0,
+                        ...$stock->weightMovement((float) $stock->original_weight_kg, 0, (float) $stock->balance_weight_kg),
                     ]);
                 }
             }
@@ -330,7 +358,7 @@ class ReelStockCorrectionController extends Controller
         $gsm = ReelGsm::findOrFail($data['reel_gsm_id']);
         $part = fn ($value) => strtoupper(preg_replace('/[^A-Z0-9]/i', '', (string) $value));
         $number = fn ($value) => rtrim(rtrim(number_format((float) $value, 2, '.', ''), '0'), '.');
-        return implode('-', [$part($brand->short_name ?: $brand->name), $part($type->short_name ?: $type->name), $part($gsm->gsm) . 'GSM', $number($data['width']), $number($data['length'])]);
+        return implode('-', [$part($brand->short_name ?: $brand->name), $part($type->short_name ?: $type->name), $part($gsm->gsm) . 'GSM', $number($data['width']), $number($type->volume === 'weight' ? $data['weight_kg'] : $data['length'])]);
     }
 
     private function changeLabel(?string $before, ?string $after): string

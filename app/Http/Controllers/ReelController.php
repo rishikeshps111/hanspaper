@@ -49,7 +49,7 @@ class ReelController extends Controller
     public function data(Request $request): JsonResponse
     {
         $query = Reel::query()
-            ->with(['brand:id,name', 'type:id,name', 'gsm:id,gsm'])
+            ->with(['brand:id,name', 'type:id,name,volume', 'gsm:id,gsm'])
             ->select('reels.*')
             ->withCount([
                 'stocks',
@@ -76,6 +76,8 @@ class ReelController extends Controller
         return DataTables::eloquent($query)
             ->addIndexColumn()
             ->addColumn('brand_name', fn(Reel $reel) => $reel->brand?->name ?? '—')
+            ->editColumn('length', fn (Reel $reel) => number_format($reel->nominalMeasure(), 2) . ' ' . $reel->measurementUnit())
+            ->orderColumn('length', 'COALESCE(reels.weight_kg, reels.length) $1')
             ->addColumn('type_name', fn(Reel $reel) => $reel->type?->name ?? '—')
             ->addColumn('gsm_value', fn(Reel $reel) => $reel->gsm?->gsm ?? '—')
             ->editColumn('is_active', fn(Reel $reel) => $reel->is_active ? 1 : 0)
@@ -222,6 +224,11 @@ class ReelController extends Controller
     public function update(ReelRequest $request, Reel $reel): RedirectResponse
     {
         $data = $request->validated();
+        if ((int) $data['reel_type_id'] !== (int) $reel->reel_type_id && $reel->stocks()->withoutGlobalScopes()->exists()) {
+            throw ValidationException::withMessages(['reel_type_id' => 'The reel type cannot change after stock has been added.']);
+        }
+        $data['length'] = $data['length'] ?? null;
+        $data['weight_kg'] = $data['weight_kg'] ?? null;
         $data['code'] = $this->generateCode($data);
         $this->ensureCodeIsUnique($data['code'], $reel->id);
         $reel->update($data);
@@ -262,7 +269,7 @@ class ReelController extends Controller
             $part($type->short_name ?: $type->name),
             $part($gsm->gsm) . 'GSM',
             $this->numberPart($data['width']),
-            $this->numberPart($data['length']),
+            $this->numberPart($type->volume === 'weight' ? $data['weight_kg'] : $data['length']),
         ]);
     }
 
@@ -276,7 +283,7 @@ class ReelController extends Controller
         $exists = Reel::where('code', $code)->when($ignoreId, fn ($query) => $query->where('id', '!=', $ignoreId))->exists();
         if ($exists) {
             throw ValidationException::withMessages([
-                'code' => 'A reel with the same brand, type, GSM, width, and length already exists.',
+                'code' => 'A reel with the same brand, type, GSM, width, and length or nominal weight already exists.',
             ]);
         }
     }

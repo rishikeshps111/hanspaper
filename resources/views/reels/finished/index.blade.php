@@ -74,7 +74,7 @@
                                     <th>Reel Type</th>
                                     <th>GSM</th>
                                     <th>Width (mm)</th>
-                                    <th>Original Length (m)</th>
+                                    <th>Original Length / Weight</th>
                                     <th>Provider</th>
                                     <th>Warehouse</th>
                                     <th>Stock Added Date</th>

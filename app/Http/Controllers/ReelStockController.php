@@ -54,6 +54,8 @@ class ReelStockController extends Controller
 
         return DataTables::eloquent($query)->addIndexColumn()
             ->addColumn('reel_code', fn ($row) => $row->reel?->code)
+            ->editColumn('original_length', fn (ReelStock $stock) => number_format($stock->originalMeasure(), 2) . ' ' . $stock->reel->measurementUnit())
+            ->editColumn('balance_length', fn (ReelStock $stock) => number_format($stock->availableBalance(), 2) . ' ' . $stock->reel->measurementUnit())
             ->addColumn('provider_name', fn ($row) => $row->provider?->name ?? '—')
             ->editColumn('created_at', fn (ReelStock $stock) => $stock->created_at?->format('d M Y h:i a') ?? '—')
             ->editColumn('actual_code', fn ($row) => $row->actual_code ?: '—')
@@ -77,7 +79,11 @@ class ReelStockController extends Controller
     {
         DB::transaction(function () use ($request) {
             $data = $request->validated();
+            $reel = Reel::with('type')->findOrFail($data['reel_id']);
             $data['stock_code'] = $this->nextStockCode();
+            $data['original_length'] = $data['original_length'] ?? 0;
+            $data['original_weight_kg'] = $reel->isWeightBased() ? $reel->weight_kg : null;
+            $data['balance_weight_kg'] = $data['original_weight_kg'];
             $data['balance_length'] = $data['original_length'];
             $data['status'] = 'full';
             $stock = ReelStock::create($data);
@@ -88,6 +94,7 @@ class ReelStockController extends Controller
                 'length' => $stock->original_length, 'balance_before' => 0,
                 'balance_after' => $stock->balance_length, 'reel_warehouse_id' => $stock->reel_warehouse_id,
                 'remarks' => 'Opening stock', 'created_by' => auth()->id(), 'created_at' => now(),
+                ...$stock->weightMovement((float) $stock->original_weight_kg, 0, (float) $stock->balance_weight_kg),
             ]);
         });
 
@@ -115,12 +122,15 @@ class ReelStockController extends Controller
                     'reel_id' => $reel->id,
                     'reel_provider_id' => $validated['reel_provider_id'],
                     'reel_warehouse_id' => $validated['reel_warehouse_id'],
-                    'original_length' => $reel->length,
-                    'balance_length' => $reel->length,
+                    'original_length' => $reel->isWeightBased() ? 0 : $reel->length,
+                    'balance_length' => $reel->isWeightBased() ? 0 : $reel->length,
+                    'original_weight_kg' => $reel->isWeightBased() ? $reel->weight_kg : null,
+                    'balance_weight_kg' => $reel->isWeightBased() ? $reel->weight_kg : null,
                     'purchase_price' => $reel->unit_price,
                     'status' => 'full',
                     'is_active' => true,
                 ]);
+                $stock->setRelation('reel', $reel);
                 ReelStockMovement::create([
                     'batch_uuid' => $batchUuid,
                     'reel_stock_id' => $stock->id,
@@ -131,6 +141,7 @@ class ReelStockController extends Controller
                     'balance_after' => $stock->balance_length,
                     'reel_warehouse_id' => $stock->reel_warehouse_id,
                     'remarks' => 'Opening stock added in bulk',
+                    ...$stock->weightMovement((float) $stock->original_weight_kg, 0, (float) $stock->balance_weight_kg),
                     'created_by' => auth()->id(),
                     'created_at' => now(),
                 ]);
@@ -161,7 +172,7 @@ class ReelStockController extends Controller
 
     public function reelStockData(Request $request, Reel $reel): JsonResponse
     {
-        $query = ReelStock::with(['warehouse', 'provider', 'reel:id,code'])->withCount('usages')
+        $query = ReelStock::with(['warehouse', 'provider', 'reel.type'])->withCount('usages')
             ->where('reel_id', $reel->id)
             ->select('reel_stocks.*')
             ->orderByDesc('created_at');
@@ -181,6 +192,7 @@ class ReelStockController extends Controller
             ->addColumn('select', fn (ReelStock $stock) => '<input type="checkbox" class="form-check-input stock-checkbox" data-id="'.$stock->id.
                 '" data-code="'.e($stock->stock_code).
                 '" data-reel-code="'.e($stock->reel?->code ?? '').
+                '" data-status="'.e($stock->status).'" data-balance="'.e(number_format($stock->availableBalance(), 2, '.', '')).'" data-unit="'.e($stock->reel->measurementUnit()).
                 '" data-provider="'.e($stock->provider?->name ?? '—').
                 '" data-added-date="'.e($stock->created_at?->format('d M Y h:i a') ?? '—').'">')
             ->addColumn('warehouse_name', fn (ReelStock $stock) => $stock->warehouse?->name ?? '—')
@@ -196,6 +208,7 @@ class ReelStockController extends Controller
                 '" title="Add/Edit Actual Code"><i class="bx bx-edit"></i></button>
                  <button type="button" class="btn btn-sm btn-outline-dark print-stock-barcode" data-code="'.
                 e($stock->stock_code).'" data-reel-code="'.e($stock->reel?->code ?? '').
+                '" data-status="'.e($stock->status).'" data-balance="'.e(number_format($stock->availableBalance(), 2, '.', '')).'" data-unit="'.e($stock->reel->measurementUnit()).
                 '" data-provider="'.e($stock->provider?->name ?? '—').
                 '" data-added-date="'.e($stock->created_at?->format('d M Y h:i a') ?? '—').
                 '" title="Print Barcode"><i class="bx bx-barcode"></i></button>')
@@ -284,6 +297,7 @@ class ReelStockController extends Controller
                     'reel_stock_id' => $stock->id, 'transaction_type' => 'transfer_out',
                     'stock_status' => $stock->status,
                     'length' => $balance, 'balance_before' => $balance, 'balance_after' => $balance,
+                    ...$stock->weightMovement((float) $stock->balance_weight_kg, (float) $stock->balance_weight_kg, (float) $stock->balance_weight_kg),
                     'reel_warehouse_id' => $sourceWarehouseId, 'remarks' => $validated['remarks'] ?? 'Warehouse transfer',
                     'created_by' => auth()->id(), 'created_at' => now(),
                 ]);
@@ -293,6 +307,7 @@ class ReelStockController extends Controller
                     'reel_stock_id' => $stock->id, 'transaction_type' => 'transfer_in',
                     'stock_status' => $stock->status,
                     'length' => $balance, 'balance_before' => $balance, 'balance_after' => $balance,
+                    ...$stock->weightMovement((float) $stock->balance_weight_kg, (float) $stock->balance_weight_kg, (float) $stock->balance_weight_kg),
                     'reel_warehouse_id' => $destination->id, 'remarks' => $validated['remarks'] ?? 'Warehouse transfer',
                     'created_by' => auth()->id(), 'created_at' => now(),
                 ]);
@@ -308,6 +323,7 @@ class ReelStockController extends Controller
 
     public function edit(ReelStock $stock): View
     {
+        abort_if($stock->productionRuns()->exists(), 422, 'Stock assigned to production cannot be edited.');
         abort_if($stock->movements()->where('transaction_type', '!=', 'opening')->exists(), 422, 'Stock with transactions cannot be edited.');
 
         return view('reels.stock.edit', array_merge($this->formData(false), compact('stock')));
@@ -315,15 +331,27 @@ class ReelStockController extends Controller
 
     public function update(ReelStockRequest $request, ReelStock $stock): RedirectResponse
     {
+        abort_if($stock->productionRuns()->exists(), 422, 'Stock assigned to production cannot be edited.');
         abort_if($stock->movements()->where('transaction_type', '!=', 'opening')->exists(), 422, 'Stock with transactions cannot be edited.');
         DB::transaction(function () use ($request, $stock) {
             $data = $request->validated();
+            $stock = ReelStock::lockForUpdate()->findOrFail($stock->id);
+            abort_if($stock->productionRuns()->exists() || $stock->movements()->where('transaction_type', '!=', 'opening')->exists(), 422, 'Stock with activity cannot be edited.');
+            if ($stock->isWeightBased() !== Reel::findOrFail($data['reel_id'])->isWeightBased()) {
+                throw ValidationException::withMessages(['reel_id' => 'Choose a reel with the same measurement mode.']);
+            }
+            $reel = Reel::with('type')->findOrFail($data['reel_id']);
+            $data['original_length'] = $data['original_length'] ?? 0;
+            $data['original_weight_kg'] = $reel->isWeightBased() ? $reel->weight_kg : null;
+            $data['balance_weight_kg'] = $data['original_weight_kg'];
             $data['balance_length'] = $data['original_length'];
             $stock->update($data);
             $stock->movements()->where('transaction_type', 'opening')->update([
                 'length' => $data['original_length'], 'balance_after' => $data['original_length'],
                 'reel_warehouse_id' => $data['reel_warehouse_id'],
                 'reel_provider_id' => $data['reel_provider_id'],
+                'weight_kg' => $data['original_weight_kg'], 'weight_before_kg' => $data['original_weight_kg'] === null ? null : 0,
+                'weight_after_kg' => $data['original_weight_kg'],
             ]);
         });
 

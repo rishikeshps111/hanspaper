@@ -12,6 +12,7 @@ class ReelStockMovement extends Model
     public $timestamps = false;
 
     protected $fillable = [
+        'weight_kg', 'weight_before_kg', 'weight_after_kg',
         'batch_uuid', 'reel_stock_id', 'reel_provider_id', 'transaction_type', 'stock_status', 'length', 'balance_before', 'balance_after',
         'reference_type', 'reference_id', 'customer_id', 'reel_warehouse_id', 'remarks', 'created_by', 'created_at',
     ];

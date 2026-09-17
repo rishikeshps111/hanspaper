@@ -80,7 +80,7 @@
                                     <th>Type</th>
                                     <th>GSM</th>
                                     <th>Width (mm)</th>
-                                    <th>Length (m)</th>
+                                    <th>Length / Weight</th>
                                     <th>Unit Price</th>
                                     <th>Selling Price</th>
                                     <th>Total Reels</th>

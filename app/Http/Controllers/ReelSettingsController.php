@@ -9,7 +9,10 @@ use App\Models\Reels\ReelType;
 use App\Models\Reels\ReelWarehouse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Yajra\DataTables\Facades\DataTables;
 
@@ -21,6 +24,24 @@ class ReelSettingsController extends Controller
         'providers' => ReelProvider::class,
         'types' => ReelType::class,
         'warehouses' => ReelWarehouse::class,
+    ];
+
+    private const DELETE_DEPENDENCIES = [
+        'brands' => [['reels', 'reel_brand_id', 'reels']],
+        'gsm' => [['reels', 'reel_gsm_id', 'reels']],
+        'types' => [['reels', 'reel_type_id', 'reels']],
+        'providers' => [
+            ['reel_stocks', 'reel_provider_id', 'physical reel stocks'],
+            ['reel_stock_movements', 'reel_provider_id', 'stock movements'],
+            ['reel_stock_corrections', 'reel_provider_id', 'stock corrections'],
+            ['reel_stock_corrections', 'original_reel_provider_id', 'stock corrections'],
+        ],
+        'warehouses' => [
+            ['reel_stocks', 'reel_warehouse_id', 'physical reel stocks'],
+            ['reel_stock_movements', 'reel_warehouse_id', 'stock movements'],
+            ['reel_stock_corrections', 'reel_warehouse_id', 'stock corrections'],
+            ['reel_stock_corrections', 'original_reel_warehouse_id', 'stock corrections'],
+        ],
     ];
 
     public function index(): View
@@ -69,7 +90,25 @@ class ReelSettingsController extends Controller
     public function destroy(string $type, int $id): JsonResponse
     {
         $model = $this->model($type);
-        $model::findOrFail($id)->delete();
+        $record = $model::findOrFail($id);
+        foreach (self::DELETE_DEPENDENCIES[$type] as [$table, $column, $description]) {
+            if (DB::table($table)->where($column, $id)->exists()) {
+                throw ValidationException::withMessages([
+                    'delete' => "This setting is used by {$description} and cannot be deleted. You can mark it inactive instead.",
+                ]);
+            }
+        }
+
+        try {
+            $record->delete();
+        } catch (QueryException $exception) {
+            if (in_array((string) $exception->getCode(), ['23000', '23503'], true)) {
+                throw ValidationException::withMessages([
+                    'delete' => 'This setting is in use and cannot be deleted. You can mark it inactive instead.',
+                ]);
+            }
+            throw $exception;
+        }
 
         return response()->json(['message' => 'Reel setting deleted successfully.']);
     }
@@ -84,6 +123,9 @@ class ReelSettingsController extends Controller
     {
         $table = (new $model())->getTable();
         $active = ['is_active' => ['required', 'boolean']];
+        if ($type === 'types') {
+            $active['volume'] = ['required', Rule::in(['length', 'weight'])];
+        }
 
         if ($type === 'gsm') {
             return $request->validate([

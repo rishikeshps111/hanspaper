@@ -205,7 +205,7 @@
                                 step="0.01" placeholder="All Widths">
                         </div>
                         <div class="col-md-2">
-                            <label class="form-label">Length (m)</label>
+                            <label class="form-label">Length / Weight</label>
                             <input type="number" id="dashboardLength" class="form-control dashboard-number-filter"
                                 min="0.01" step="0.01" placeholder="All Lengths">
                         </div>
@@ -224,7 +224,7 @@
                                     <th rowspan="2">Reel Type</th>
                                     <th rowspan="2">GSM</th>
                                     <th rowspan="2">Width (mm)</th>
-                                    <th rowspan="2">Length (m)</th>
+                                    <th rowspan="2">Length / Weight</th>
                                     <th class="reel-group-header" colspan="{{ $warehouses->count() + 1 }}">Full Reels</th>
                                     <th class="reel-group-header" colspan="{{ $warehouses->count() + 1 }}">Bit Reels</th>
                                 </tr>
@@ -677,7 +677,7 @@
                     reelCode: this.dataset.reelCode,
                     provider: this.dataset.provider,
                     addedDate: this.dataset.addedDate,
-                    actualBalanceLength: this.dataset.actualBalanceLength
+                    measurementUnit: this.dataset.measurementUnit || 'm', actualBalanceLength: this.dataset.actualBalanceLength
                 });
                 else selectedDashboardStocks.delete(id);
                 updateDashboardStockActions();
@@ -693,7 +693,7 @@
                         reelCode: box.dataset.reelCode,
                         provider: box.dataset.provider,
                         addedDate: box.dataset.addedDate,
-                        actualBalanceLength: box.dataset.actualBalanceLength
+                        measurementUnit: box.dataset.measurementUnit || 'm', actualBalanceLength: box.dataset.actualBalanceLength
                     });
                     else selectedDashboardStocks.delete(id);
                 });
@@ -716,7 +716,7 @@
                 const escapeHtml = value => $('<div>').text(value || '—').html();
                 const labels = stocks.flatMap(stock => [stock, stock]);
                 const canvases = labels.map((stock, index) =>
-                    `<div class="label"><div class="date">${escapeHtml(stock.addedDate)}</div><canvas id="barcode-${index}"></canvas><div class="stock">${escapeHtml(stock.code)}</div><div class="detail">${escapeHtml(stock.reelCode)}</div><div class="detail">${escapeHtml(stock.provider)}</div>${stock.status === 'bit' ? `<div class="bit-badge">BIT REEL</div><div class="bit-length">Remaining : ${escapeHtml(stock.actualBalanceLength)} m</div>` : ''}</div>`
+                    `<div class="label"><div class="date">${escapeHtml(stock.addedDate)}</div><canvas id="barcode-${index}"></canvas><div class="stock">${escapeHtml(stock.code)}</div><div class="detail">${escapeHtml(stock.reelCode)}</div><div class="detail">${escapeHtml(stock.provider)}</div>${stock.status === 'bit' ? `<div class="bit-badge">BIT REEL</div><div class="bit-length">Remaining : ${escapeHtml(stock.actualBalanceLength)} ${escapeHtml(stock.measurementUnit || 'm')}</div>` : ''}</div>`
                 ).join('');
                 const data = JSON.stringify(labels).replace(/</g, '\\u003c');
                 printWindow.document.write(
@@ -732,7 +732,7 @@
                     provider: this.dataset.provider,
                     addedDate: this.dataset.addedDate,
                     status: this.dataset.status,
-                    actualBalanceLength: this.dataset.actualBalanceLength
+                    measurementUnit: this.dataset.measurementUnit || 'm', actualBalanceLength: this.dataset.actualBalanceLength
                 }]);
             });
             $('#dashboardPrintSelected').on('click', () => printDashboardBarcodes(Array.from(selectedDashboardStocks

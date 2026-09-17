@@ -10,18 +10,22 @@ $(function () {
         return option?.value ? clean(option.dataset.shortName) : '';
     };
     const updateReelCode = () => {
+        const weight = $('#reel_type_id option:selected').data('volume') === 'weight';
+        $('#length').prop('required', !weight).prop('disabled', weight).closest('.col-md-6').toggle(!weight);
+        $('#weight_kg').prop('required', weight).prop('disabled', !weight);
+        $('#weightField').toggle(weight);
         const parts = [
             selectedShortName('#reel_brand_id'),
             selectedShortName('#reel_type_id'),
             selectedShortName('#reel_gsm_id') + 'GSM',
             numberPart($('#width').val()),
-            numberPart($('#length').val()),
+            numberPart($(weight ? '#weight_kg' : '#length').val()),
         ];
         $('#code').val(parts.every(Boolean) ? parts.join('-') : '');
     };
 
     $('#reel_brand_id, #reel_type_id, #reel_gsm_id').on('change', updateReelCode);
-    $('#length, #width').on('input', updateReelCode);
+    $('#length, #width, #weight_kg').on('input', updateReelCode);
     updateReelCode();
 });
 </script>

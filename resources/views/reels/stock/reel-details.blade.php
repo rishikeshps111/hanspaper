@@ -295,7 +295,7 @@
                 if (this.checked) selectedStocks.set(String(this.dataset.id), {
                     code: this.dataset.code,
                     reelCode: this.dataset.reelCode,
-                    provider: this.dataset.provider,
+                    provider: this.dataset.provider, status: this.dataset.status, balance: this.dataset.balance, unit: this.dataset.unit,
                     addedDate: this.dataset.addedDate
                 });
                 else selectedStocks.delete(String(this.dataset.id));
@@ -308,7 +308,7 @@
                     if (this.checked) selectedStocks.set(String(checkbox.dataset.id), {
                         code: checkbox.dataset.code,
                         reelCode: checkbox.dataset.reelCode,
-                        provider: checkbox.dataset.provider,
+                        provider: checkbox.dataset.provider, status: checkbox.dataset.status, balance: checkbox.dataset.balance, unit: checkbox.dataset.unit,
                         addedDate: checkbox.dataset.addedDate
                     });
                     else selectedStocks.delete(String(checkbox.dataset.id));
@@ -416,6 +416,7 @@
                         <div class="stock-code">${escapeHtml(stock.code)}</div>
                         <div class="reel-code">${escapeHtml(stock.reelCode)}</div>
                         <div class="provider">${escapeHtml(stock.provider)}</div>
+                        ${stock.status === 'bit' ? `<div class="added-date">BIT REEL</div><div class="added-date">Remaining : ${escapeHtml(stock.balance)} ${escapeHtml(stock.unit)}</div>` : ''}
                     </div>`).join('');
                 const barcodeData = JSON.stringify(labels).replace(/</g, '\\u003c');
                 printWindow.document.write(`<!doctype html><html><head><title>Reel Barcodes</title>
@@ -442,7 +443,7 @@
                 printBarcodes([{
                     code: this.dataset.code,
                     reelCode: this.dataset.reelCode,
-                    provider: this.dataset.provider,
+                    provider: this.dataset.provider, status: this.dataset.status, balance: this.dataset.balance, unit: this.dataset.unit,
                     addedDate: this.dataset.addedDate
                 }]);
             });

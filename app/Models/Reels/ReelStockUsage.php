@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class ReelStockUsage extends Model
 {
     protected $fillable = [
+        'weight_before_kg', 'consumed_weight_kg', 'remaining_weight_kg', 'wastage_weight_kg',
         'production_id',
         'production_run_id',
         'production_list_id',

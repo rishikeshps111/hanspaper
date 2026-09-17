@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ReelSaleItem extends Model
 {
-    protected $fillable = ['reel_sale_id', 'reel_stock_id', 'length', 'unit_price', 'discount', 'total', 'balance_before', 'balance_after'];
+    protected $fillable = ['reel_sale_id', 'reel_stock_id', 'length', 'unit_price', 'discount', 'total', 'balance_before', 'balance_after', 'weight_kg', 'weight_before_kg', 'weight_after_kg'];
     public function sale(): BelongsTo { return $this->belongsTo(ReelSale::class, 'reel_sale_id'); }
     public function stock(): BelongsTo { return $this->belongsTo(ReelStock::class, 'reel_stock_id'); }
 }

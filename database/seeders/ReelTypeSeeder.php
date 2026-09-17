@@ -13,7 +13,7 @@ class ReelTypeSeeder extends Seeder
         foreach (['Thermal Paper', 'Normal Paper', 'Color', 'Synthetic'] as $name) {
             DB::table('reel_types')->updateOrInsert(
                 ['name' => $name],
-                ['short_name' => $name, 'created_by' => $userId, 'updated_by' => $userId, 'is_active' => true, 'updated_at' => now(), 'created_at' => now()]
+                ['volume' => DB::table('reel_types')->where('name', $name)->value('volume') ?? 'length', 'short_name' => $name, 'created_by' => $userId, 'updated_by' => $userId, 'is_active' => true, 'updated_at' => now(), 'created_at' => now()]
             );
         }
     }

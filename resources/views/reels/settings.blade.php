@@ -56,6 +56,7 @@
                                             <th>{{ $tab['field'] === 'gsm' ? 'GSM' : 'Name' }}</th>
                                             @if($tab['field'] !== 'gsm')<th>Short Name</th>@endif
                                             @if($key === 'warehouses')<th>Warehouse Type</th>@endif
+                                            @if($key === 'types')<th>Volume</th>@endif
                                             <th>Created By</th>
                                             <th>Updated By</th>
                                             <th>Status</th>
@@ -101,6 +102,10 @@
                         <option value="godown">Godown</option>
                     </select>
                 </div>
+                <div class="mb-3 d-none" id="volumeGroup">
+                    <label class="form-label">Volume <span class="text-danger">*</span></label>
+                    <select class="form-select" id="volume"><option value="length">Length (m)</option><option value="weight">Weight (kg)</option></select>
+                </div>
                 <div>
                     <label class="form-label">Status</label>
                     <select class="form-select" id="isActive" required>
@@ -125,7 +130,10 @@
                 <h5 class="modal-title">Delete Reel Setting</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">Are you sure you want to delete <strong id="deleteLabel"></strong>?</div>
+            <div class="modal-body">
+                <div id="deleteErrors" class="alert alert-danger d-none" role="alert"></div>
+                Are you sure you want to delete <strong id="deleteLabel"></strong>?
+            </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="submit" class="btn btn-danger">Delete</button>
@@ -154,7 +162,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const type = table.dataset.type;
         const gsm = table.dataset.field === 'gsm';
         const warehouse = type === 'warehouses';
-        const sortColumn = gsm ? 6 : (warehouse ? 8 : 7);
+        const sortColumn = gsm ? 6 : (warehouse || type === 'types' ? 8 : 7);
         const columns = [
             {data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false},
             {data: gsm ? 'gsm' : 'name', name: gsm ? 'gsm' : 'name'}
@@ -167,6 +175,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 ? '<span class="badge bg-primary">Factory</span>'
                 : '<span class="badge bg-info text-dark">Godown</span>'
         });
+        if (type === 'types') columns.push({data: 'volume', name: 'volume', render: value => value === 'weight' ? 'Weight (kg)' : 'Length (m)'});
         columns.push(
             {data: 'created_by_name', orderable: false, searchable: false},
             {data: 'updated_by_name', orderable: false, searchable: false},
@@ -189,6 +198,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                 data-field="${gsm ? 'gsm' : 'name'}" data-id="${record.id}"
                                 data-value="${escapeAttribute(value)}" data-short-name="${escapeAttribute(record.short_name || '')}"
                                 data-warehouse-type="${escapeAttribute(record.warehouse_type || 'godown')}"
+                                data-volume="${escapeAttribute(record.volume || 'length')}"
                                 data-active="${record.is_active ? 1 : 0}" title="Edit"><i class="bx bx-edit"></i></button>
                             <button class="btn btn-sm btn-outline-danger open-delete-modal"
                                 data-type="${type}" data-id="${record.id}" data-label="${escapeAttribute(value)}"
@@ -227,6 +237,8 @@ document.addEventListener('DOMContentLoaded', function () {
         const editing = Boolean(button.dataset.id);
         const gsm = button.dataset.field === 'gsm';
         document.getElementById('settingType').value = button.dataset.type;
+        document.getElementById('volumeGroup').classList.toggle('d-none', button.dataset.type !== 'types');
+        document.getElementById('volume').value = button.dataset.volume || 'length';
         document.getElementById('settingId').value = button.dataset.id || '';
         document.getElementById('settingValue').value = button.dataset.value || '';
         document.getElementById('settingValue').type = gsm ? 'number' : 'text';
@@ -248,6 +260,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const id = document.getElementById('settingId').value;
         const value = document.getElementById('settingValue').value;
         const payload = { is_active: document.getElementById('isActive').value };
+        if (type === 'types') payload.volume = document.getElementById('volume').value;
         if (type === 'gsm') payload.gsm = value;
         else {
             payload.name = value;
@@ -269,7 +282,7 @@ document.addEventListener('DOMContentLoaded', function () {
             box.classList.remove('d-none');
             return;
         }
-        tables[type].order([type === 'gsm' ? 6 : (type === 'warehouses' ? 8 : 7), 'desc']).ajax.reload(null, Boolean(!id));
+        tables[type].order([type === 'gsm' ? 6 : (['warehouses', 'types'].includes(type) ? 8 : 7), 'desc']).ajax.reload(null, Boolean(!id));
         settingModal.hide();
     });
 
@@ -278,6 +291,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!button) return;
         deleteTarget = {type: button.dataset.type, id: button.dataset.id};
         document.getElementById('deleteLabel').textContent = button.dataset.label;
+        document.getElementById('deleteErrors').classList.add('d-none');
         deleteModal.show();
     });
 
@@ -294,7 +308,10 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         else {
             const result = await response.json();
-            alert(result.message || 'Unable to delete record.');
+            const messages = result.errors ? Object.values(result.errors).flat() : [result.message || 'Unable to delete record.'];
+            const box = document.getElementById('deleteErrors');
+            box.textContent = messages.join(' ');
+            box.classList.remove('d-none');
         }
     });
 });

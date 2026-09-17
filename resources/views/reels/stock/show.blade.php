@@ -11,7 +11,7 @@
                 <div class="card-body">
                     <div class="mb-3"><strong>Provider:</strong> {{ $stock->provider?->name ?? '—' }}</div>
                     <div class="row g-3 mb-4">
-                        @foreach(['Reel Code' => $stock->reel->code, 'Actual Code' => $stock->actual_code ?: '—', 'Warehouse' => $stock->warehouse->name, 'Original Length' => $stock->original_length . ' m', 'Balance Length' => $stock->balance_length . ' m', 'Status' => ucfirst($stock->status)] as $label => $value)
+                        @foreach(['Reel Code' => $stock->reel->code, 'Actual Code' => $stock->actual_code ?: '—', 'Warehouse' => $stock->warehouse->name, 'Original Length / Weight' => number_format($stock->originalMeasure(), 2) . ' ' . $stock->reel->measurementUnit(), 'Balance' => number_format($stock->availableBalance(), 2) . ' ' . $stock->reel->measurementUnit(), 'Status' => ucfirst($stock->status)] as $label => $value)
                             <div class="col-md-4"><small class="text-muted">{{ $label }}</small>
                                 <div class="fw-bold">{{ $value }}</div>
                         </div>@endforeach
@@ -24,7 +24,7 @@
                                     <th>Date</th>
                                     <th>Type</th>
                                     <th>Provider</th>
-                                    <th>Length (m)</th>
+                                    <th>Length / Weight</th>
                                     <th>Before (m)</th>
                                     <th>After (m)</th>
                                     <th>Remarks</th>
@@ -36,9 +36,9 @@
                                         <td>{{ $movement->created_at }}</td>
                                         <td>{{ ucfirst($movement->transaction_type) }}</td>
                                         <td>{{ $movement->provider?->name ?? '—' }}</td>
-                                        <td>{{ $movement->length }}</td>
-                                        <td>{{ $movement->balance_before }}</td>
-                                        <td>{{ $movement->balance_after }}</td>
+                                        <td>{{ $movement->weight_kg ?? $movement->length }} {{ $movement->weight_kg !== null ? 'kg' : 'm' }}</td>
+                                        <td>{{ $movement->weight_before_kg ?? $movement->balance_before }}</td>
+                                        <td>{{ $movement->weight_after_kg ?? $movement->balance_after }}</td>
                                         <td>{{ $movement->remarks }}</td>
                                 </tr>@endforeach
                             </tbody>

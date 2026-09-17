@@ -41,7 +41,7 @@
                             'Type Short Name' => $reel->type->short_name ?: '—',
                             'GSM' => $reel->gsm->gsm . ' GSM',
                             'Width' => number_format((float) $reel->width, 2) . ' mm',
-                            'Length' => number_format((float) $reel->length, 2) . ' m',
+                            ($reel->isWeightBased() ? 'Nominal Weight' : 'Length') => number_format($reel->nominalMeasure(), 2) . ' ' . $reel->measurementUnit(),
                             'Unit Price' => $reel->unit_price,
                             'Selling Price' => $reel->selling_price,
                             'Remarks' => $reel->remarks,

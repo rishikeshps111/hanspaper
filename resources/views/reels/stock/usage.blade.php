@@ -15,6 +15,8 @@
                 </div>
                 <div class="card-body">
                     @php
+                        $weightBased = $stock->isWeightBased();
+                        $measureUnit = $stock->reel->measurementUnit();
                         $latestUsage = $stock->usages->sortBy([
                             ['created_at', 'desc'],
                             ['id', 'desc'],
@@ -35,13 +37,13 @@
                             </div>
                         </div>
                         <div class="col-md-3">
-                            <div class="border rounded p-3"><small class="text-muted">Original Length</small>
-                                <div class="fw-bold">{{ number_format($stock->original_length, 2) }} m</div>
+                            <div class="border rounded p-3"><small class="text-muted">{{ $weightBased ? 'Original Weight' : 'Original Length' }}</small>
+                                <div class="fw-bold">{{ number_format($stock->originalMeasure(), 2) }} {{ $measureUnit }}</div>
                             </div>
                         </div>
                         <div class="col-md-3">
-                            <div class="border rounded p-3"><small class="text-muted">Wastage Length</small>
-                                <div class="fw-bold">{{ number_format($physicalStockLength, 2) }} m</div>
+                            <div class="border rounded p-3"><small class="text-muted">{{ $weightBased ? ($stock->status === 'finished' ? 'Wastage Weight' : 'Remaining Weight') : 'Wastage Length' }}</small>
+                                <div class="fw-bold">{{ number_format($weightBased ? ($stock->status === 'finished' ? ($latestUsage?->wastage_weight_kg ?? 0) : $stock->balance_weight_kg) : $physicalStockLength, 2) }} {{ $measureUnit }}</div>
                             </div>
                         </div>
                         <div class="col-md-3">
@@ -55,8 +57,8 @@
                             @forelse($stock->usages as $usage)
                                 @php
                                     $widthSplits = max(1, (int) $usage->output_roll_count);
-                                    $actualAvailableLength = (float) $usage->total_output_length / $widthSplits;
-                                    $actualUsedLength = (float) $usage->consumed_length / $widthSplits;
+                                    $actualAvailableLength = $weightBased ? (float) $usage->weight_before_kg : (float) $usage->total_output_length / $widthSplits;
+                                    $actualUsedLength = $weightBased ? (float) $usage->consumed_weight_kg : (float) $usage->consumed_length / $widthSplits;
                                     $actualBalanceAfter = max(
                                         0,
                                         ((float) $usage->balance_before - (float) $usage->consumed_length) /
@@ -104,13 +106,12 @@
                                                         mm</strong></div>
                                                 <div class="col-sm-4"><small class="text-muted d-block">Available
                                                         Capacity</small><strong>{{ number_format($actualAvailableLength, 2) }}
-                                                        m</strong></div>
+                                                        {{ $measureUnit }}</strong></div>
                                                 <div class="col-sm-4"><small class="text-muted d-block">Total
                                                         Usage</small><strong>{{ number_format($actualUsedLength, 2) }}
-                                                        m</strong></div>
-                                                <div class="col-sm-4"><small class="text-muted d-block">Balance length After
-                                                        Production</small><strong>{{ number_format($actualBalanceAfter, 2) }}
-                                                        m</strong></div>
+                                                        {{ $measureUnit }}</strong></div>
+                                                <div class="col-sm-4"><small class="text-muted d-block">{{ $weightBased ? ($usage->resulting_status === 'finished' ? 'Wastage Weight' : 'Remaining Weight') : 'Balance After Production' }}</small><strong>{{ number_format($weightBased ? $usage->remaining_weight_kg : $actualBalanceAfter, 2) }}
+                                                        {{ $measureUnit }}</strong></div>
                                             </div>
                                         </div>
                                         <div class="card-footer bg-white d-flex justify-content-between align-items-center">
@@ -145,10 +146,10 @@
                                         <th>Roll Length (m)</th>
                                         <th>Output Width (mm)</th>
                                         <th>Width Splits</th>
-                                        <th>Available Capacity (m)</th>
-                                        <th>Total Usage (m)</th>
+                                        <th>Available ({{ $measureUnit }})</th>
+                                        <th>Total Usage ({{ $measureUnit }})</th>
                                         <th>Width Waste (mm)</th>
-                                        <th>Balance (m)</th>
+                                        <th>Balance ({{ $measureUnit }})</th>
                                         <th>Result</th>
                                     </tr>
                                 </thead>
@@ -170,11 +171,11 @@
                                             <td>{{ number_format($usage->roll_length, 2) }} m</td>
                                             <td>{{ number_format($usage->output_roll_width, 2) }} mm</td>
                                             <td>{{ $usage->output_roll_count }}</td>
-                                            <td>{{ number_format($usage->total_output_length, 2) }} m</td>
-                                            <td>{{ number_format($usage->consumed_length, 2) }} m</td>
+                                            <td>{{ number_format($weightBased ? $usage->weight_before_kg : $usage->total_output_length, 2) }} {{ $measureUnit }}</td>
+                                            <td>{{ number_format($weightBased ? $usage->consumed_weight_kg : $usage->consumed_length, 2) }} {{ $measureUnit }}</td>
                                             <td>{{ number_format($usage->width_waste, 2) }} mm</td>
-                                            <td>{{ number_format($usage->balance_before, 2) }} →
-                                                {{ number_format($usage->balance_after, 2) }} m
+                                            <td>{{ number_format($weightBased ? $usage->weight_before_kg : $usage->balance_before, 2) }} →
+                                                {{ number_format($weightBased ? ($usage->resulting_status === 'finished' ? 0 : $usage->remaining_weight_kg) : $usage->balance_after, 2) }} {{ $measureUnit }}
                                             </td>
                                             <td><span
                                                     class="badge bg-{{ $usage->resulting_status === 'finished' ? 'secondary' : 'warning' }}">{{ ucfirst($usage->resulting_status) }}</span>

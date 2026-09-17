@@ -18,10 +18,10 @@
             data-placeholder="Select Reel" required>
             <option value=""></option>
             @foreach($reels as $reel)
-                <option value="{{ $reel->id }}" data-length="{{ $reel->length }}" data-purchase="{{ $reel->unit_price }}"
+                <option value="{{ $reel->id }}" data-volume="{{ $reel->type->volume }}" data-length="{{ $reel->length }}" data-purchase="{{ $reel->unit_price }}"
                     data-selling="{{ $reel->selling_price }}" @selected(old('reel_id', $stock->reel_id ?? '') == $reel->id)>
                     {{ $reel->code }} | {{ $reel->brand->name }} / {{ $reel->type->name }} / {{ $reel->gsm->gsm }} GSM /
-                    {{ $reel->width }} mm / {{ $reel->length }} m
+                    {{ $reel->width }} mm / {{ number_format($reel->nominalMeasure(), 2) }} {{ $reel->measurementUnit() }}
                 </option>
             @endforeach
         </select>
@@ -62,7 +62,7 @@
     <div class="col-md-6">
         <label class="form-label">Received At <span class="text-danger">*</span></label>
         <input type="date" name="received_at" class="form-control"
-            value="{{ old('received_at', isset($stock) ? $stock->received_at->format('Y-m-d') : now()->format('Y-m-d')) }}"
+            value="{{ old('received_at', isset($stock) ? $stock->created_at?->format('Y-m-d') : now()->format('Y-m-d')) }}"
             required>
         @error('received_at')
         <div class="text-danger small">{{ $message }}</div>@enderror

@@ -8,7 +8,7 @@
         <label for="code" class="form-label">Reel Code <span class="text-danger">*</span></label>
         <input type="text" name="code" id="code" class="form-control"
             value="{{ old('code', $reel->code ?? '') }}" readonly>
-        <div class="form-text">Generated from brand, reel type, GSM, width, and length.</div>
+        <div class="form-text">Generated from brand, reel type, GSM, width, and length or nominal weight.</div>
         @error('code')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
     </div>
 
@@ -32,7 +32,7 @@
             data-placeholder="Select Type" style="width: 100%" required>
             <option value="">Select Type</option>
             @foreach($types as $type)
-                <option value="{{ $type->id }}" data-short-name="{{ $type->short_name ?: $type->name }}" @selected(old('reel_type_id', $reel->reel_type_id ?? '') == $type->id)>
+                <option value="{{ $type->id }}" data-volume="{{ $type->volume }}" data-short-name="{{ $type->short_name ?: $type->name }}" @selected(old('reel_type_id', $reel->reel_type_id ?? '') == $type->id)>
                     {{ $type->name }}{{ !$type->is_active ? ' (Inactive)' : '' }}
                 </option>
             @endforeach
@@ -66,6 +66,11 @@
         <input type="number" name="length" id="length" class="form-control" step="0.01" min="0.01"
             value="{{ old('length', $reel->length ?? '') }}" required>
         @error('length')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+    </div>
+    <div class="col-md-6" id="weightField">
+        <label for="weight_kg" class="form-label">Nominal Weight (kg) <span class="text-danger">*</span></label>
+        <input type="number" name="weight_kg" id="weight_kg" class="form-control" step="0.01" min="0.01" value="{{ old('weight_kg', $reel->weight_kg ?? '') }}">
+        @error('weight_kg')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
     </div>
 
     <div class="col-md-6">
