@@ -239,10 +239,10 @@
                                                                         </div>
                                                                         <div class="col-md-1"><small
                                                                                 class="d-block">Width</small><strong>{{ number_format($activeRun->output_roll_width, 2) }}
-                                                                                mm</strong></div>
+                                                                                {{ $activeRun->outputWidthUnit() }}</strong></div>
                                                                         <div class="col-md-1"><small class="d-block">Roll
                                                                                 Length</small><strong>{{ number_format($activeRun->roll_length, 2) }}
-                                                                                m</strong></div>
+                                                                                {{ $activeRun->rollLengthUnit() }}</strong></div>
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -315,6 +315,7 @@
                                                                         selected
                                                                         data-status="{{ $activeRun->source_reel_status }}"
                                                                         data-width="{{ $activeRun->reelStock->reel?->width }}"
+                                                                        data-width-unit="{{ $activeRun->reelStock->reel?->widthUnit() }}"
                                                                         data-balance="{{ $activeRun->reelStock->balance_length }}"
                                                                         data-volume="{{ $activeStock->reel->type->volume }}"
                                                                         data-balance-weight="{{ $activeStock->balance_weight_kg }}"
@@ -353,8 +354,7 @@
                                                         </div>
 
                                                         <div class="col-md-3 mt-2">
-                                                            <x-label for="output_roll_width"
-                                                                name="{{ __('Output Roll Width (mm)') }}" />
+                                                            <label for="output_roll_width" class="form-label" id="outputRollWidthLabel">Output Roll Width ({{ $activeRun?->outputWidthUnit() ?? 'mm' }})</label>
                                                             <input type="number" name="output_roll_width"
                                                                 id="output_roll_width" class="form-control"
                                                                 min="0.001" step="0.001"
@@ -362,8 +362,7 @@
                                                                 {{ $activeRun ? 'readonly' : 'required' }}>
                                                         </div>
                                                         <div class="col-md-3 mt-2">
-                                                            <x-label for="roll_length"
-                                                                name="{{ __('Roll Length (m)') }}" />
+                                                            <label for="roll_length" class="form-label" id="rollLengthLabel">Roll Length ({{ $activeRun?->rollLengthUnit() ?? 'm' }})</label>
                                                             <input type="number" name="roll_length" id="roll_length"
                                                                 class="form-control" min="0.001" step="0.001"
                                                                 value="{{ $activeRun?->roll_length }}"
@@ -382,7 +381,7 @@
                                                                 id="reelCutPreview">
                                                                 <div class="row g-2">
                                                                     <div class="col-md"><small class="text-muted">Source
-                                                                            Width (mm)</small>
+                                                                            Width (<span id="previewWidthUnit">mm</span>)</small>
                                                                         <div class="fw-bold" id="previewSourceWidth">—
                                                                         </div>
                                                                     </div>
@@ -717,12 +716,10 @@
                                     material as wastage.</small></label></div>
                     </div>
                     <div id="productionWeightFields" class="mb-3 d-none">
-                        <label class="form-label fw-semibold">Physical Reel Result <span
-                                class="text-danger">*</span></label><br>
                         <label for="remaining_weight_kg" class="form-label">Measured Remaining Weight (kg)</label>
                         <input type="number" class="form-control" id="remaining_weight_kg" min="0"
                             step="0.001" disabled>
-                        <div class="form-text">Enter the measured balance only when keeping this reel as Bit.</div>
+                        <div class="form-text">Required for Bit. For Finished, leave blank for 0 kg or enter the remaining weight to record as wastage.</div>
                         <div class="text-danger small" id="remainingWeightError"></div>
                     </div>
                     <div class="card border mb-0">
@@ -863,15 +860,23 @@
                 const option = $('#reel_stock_id option:selected');
                 const stock = $('#reel_stock_id').select2('data')[0] || {};
                 const sourceWidth = parseFloat(stock.width ?? option.data('width')) || 0;
+                const widthUnit = stock.width_unit ?? option.data('width-unit') ?? 'mm';
                 const balance = parseFloat(stock.balance ?? option.data('balance')) || 0;
                 const existingCutWidth = parseFloat(stock.cut_width ?? option.data('cut-width')) || 0;
                 const stockStatus = String(stock.status ?? option.data('status') ?? '').toLowerCase();
                 const weightBased = (stock.volume ?? option.data('volume')) === 'weight';
+                const legacySelection = @json($activeRun !== null && $activeRun->dimension_unit === null) &&
+                    String($('#reel_stock_id').val()) === @json((string) ($activeRun?->reel_stock_id ?? ''));
+                const inchBased = weightBased && !legacySelection;
+                const sourceWidthForCut = inchBased && widthUnit === 'mm' ? sourceWidth / 10 : sourceWidth;
+                $('#outputRollWidthLabel').text('Output Roll Width (' + (inchBased ? 'inch' : 'mm') + ')');
+                $('#rollLengthLabel').text('Roll Length (' + (inchBased ? 'inch' : 'm') + ')');
                 const availableWeight = Number(stock.balance_weight_kg ?? option.data('balance-weight')) || 0;
                 const rollLength = parseFloat($('#roll_length').val()) || 0;
                 const quantity = parseFloat($('#production_qty').val()) || 0;
                 const outputWidth = parseFloat($('#output_roll_width').val()) || 0;
-                const rollCount = outputWidth > 0 ? Math.floor(sourceWidth / outputWidth) : 0;
+                const cutWidth = inchBased ? outputWidth * 2.54 : outputWidth;
+                const rollCount = cutWidth > 0 ? Math.floor(sourceWidthForCut / cutWidth) : 0;
                 const previousWidthSplits = existingCutWidth > 0 ?
                     Math.max(1, Math.floor(sourceWidth / existingCutWidth)) :
                     1;
@@ -880,13 +885,13 @@
                     balance;
                 const totalLength = physicalAvailableLength * rollCount;
                 const usage = quantity * rollLength;
-                const waste = rollCount > 0 ? sourceWidth - (outputWidth * rollCount) : 0;
+                const waste = rollCount > 0 ? sourceWidthForCut - (cutWidth * rollCount) : 0;
                 const remaining = Math.max(0, totalLength - usage);
                 const physicalRemaining = rollCount > 0 ? remaining / rollCount : 0;
                 const possibleRolls = rollLength > 0 ? Math.floor(totalLength / rollLength) : 0;
-                const valid = sourceWidth > 0 && rollLength > 0 && quantity > 0 && (weightBased ?
+                const valid = sourceWidthForCut > 0 && rollLength > 0 && quantity > 0 && (weightBased ?
                         availableWeight > 0 : usage <= totalLength) &&
-                    outputWidth > 0 && outputWidth <= sourceWidth && rollCount > 0;
+                    cutWidth > 0 && cutWidth <= sourceWidthForCut && rollCount > 0;
                 const calculatedStatus = remaining <= 0 ? 'finished' : 'bit';
                 const statusSelect = $('#reel_status_after_usage');
 
@@ -906,14 +911,15 @@
                     .toggleClass('text-muted', !reelStatusManuallySelected);
                 $('#reel_status_selection_type').val(reelStatusManuallySelected ? 'manual' : 'automatic');
 
-                $('#previewSourceWidth').text(sourceWidth ? sourceWidth.toFixed(2) + ' mm' : '—');
                 $('#previewBalance').text(physicalAvailableLength ? physicalAvailableLength.toFixed(2) + ' m' :
                     '—');
                 $('#previewRollCount').text(rollCount);
+                $('#previewWidthUnit').text(inchBased ? 'cm' : 'mm');
+                $('#previewSourceWidth').text(sourceWidthForCut ? sourceWidthForCut.toFixed(2) + (inchBased ? ' cm' : ' mm') : '—');
                 $('#previewTotalLength').text(totalLength.toFixed(2) + ' m');
                 $('#previewUsage').text(usage.toFixed(2) + ' m');
                 $('#previewPossibleRolls').text(possibleRolls);
-                $('#previewWaste').text(Math.max(0, waste).toFixed(2) + ' mm');
+                $('#previewWaste').text(Math.max(0, waste).toFixed(2) + (inchBased ? ' cm' : ' mm'));
                 $('#previewRemaining').text(sourceWidth ? remaining.toFixed(2) + ' m' : '—');
                 $('#previewPhysicalRemaining').text(sourceWidth ? physicalRemaining.toFixed(2) + ' m' : '—');
                 $('#previewStatus').text(valid ? (remaining <= 0 ? 'Finished' : 'Bit') : '—')
@@ -1041,7 +1047,7 @@
                     $('input[name="modal_reel_result"]').prop('checked', false);
                     const weightBased = latestCutCalculation.weightBased;
                     $('#finishedReelDescription').text(weightBased ?
-                        'Close this reel with zero remaining weight.' :
+                        'Enter any leftover weight as wastage, or leave it blank for zero.' :
                         'Treat all remaining reel material as wastage.');
                     $('#production_remaining_weight_kg').prop('disabled', true).val('');
                     $('#productionWeightFields').addClass('d-none');
@@ -1121,9 +1127,9 @@
             $('.reel-result-option').on('change', function() {
                 $('#productionWastageSummary').toggleClass('d-none', latestCutCalculation?.weightBased ||
                     this.value !== 'finished');
-                const showWeight = Boolean(latestCutCalculation?.weightBased && this.value === 'bit');
+                const showWeight = Boolean(latestCutCalculation?.weightBased);
                 $('#productionWeightFields').toggleClass('d-none', !showWeight);
-                $('#remaining_weight_kg').prop('disabled', !showWeight).prop('required', showWeight).val(
+                $('#remaining_weight_kg').prop('disabled', !showWeight).prop('required', showWeight && this.value === 'bit').val(
                     '');
                 $('#remainingWeightError').empty();
             });
@@ -1135,19 +1141,16 @@
                 }
                 $('#reel_status_after_usage').val(result);
                 if (latestCutCalculation?.weightBased) {
-                    if (result === 'bit') {
-                        const raw = $('#remaining_weight_kg').val();
-                        const weight = Number(raw);
-                        if (!raw || !$('#remaining_weight_kg')[0].checkValidity() || !Number.isFinite(
-                                weight) || weight <= 0 || weight > latestCutCalculation.availableWeight) {
-                            $('#remainingWeightError').text(
-                                'Enter a positive remaining weight within the available balance.');
-                            return;
-                        }
-                        $('#production_remaining_weight_kg').val(weight).prop('disabled', false);
-                    } else {
-                        $('#production_remaining_weight_kg').val(0).prop('disabled', false);
+                    const raw = $('#remaining_weight_kg').val();
+                    const weight = Number(raw || 0);
+                    if ((result === 'bit' && (!raw || weight <= 0)) ||
+                        (raw !== '' && (!$('#remaining_weight_kg')[0].checkValidity() || !Number.isFinite(weight) || weight > latestCutCalculation.availableWeight))) {
+                        $('#remainingWeightError').text(result === 'bit'
+                            ? 'Enter a positive remaining weight within the available balance.'
+                            : 'Remaining weight must be between zero and the available balance.');
+                        return;
                     }
+                    $('#production_remaining_weight_kg').val(weight).prop('disabled', false);
                 }
                 $('#reel_status_selection_type').val('manual');
                 $('#updateProductionModal').modal('hide');

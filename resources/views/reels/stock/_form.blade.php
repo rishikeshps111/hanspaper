@@ -21,7 +21,7 @@
                 <option value="{{ $reel->id }}" data-volume="{{ $reel->type->volume }}" data-length="{{ $reel->length }}" data-purchase="{{ $reel->unit_price }}"
                     data-selling="{{ $reel->selling_price }}" @selected(old('reel_id', $stock->reel_id ?? '') == $reel->id)>
                     {{ $reel->code }} | {{ $reel->brand->name }} / {{ $reel->type->name }} / {{ $reel->gsm->gsm }} GSM /
-                    {{ $reel->width }} mm / {{ number_format($reel->nominalMeasure(), 2) }} {{ $reel->measurementUnit() }}
+                    {{ $reel->width }} {{ $reel->widthUnit() }} / {{ number_format($reel->nominalMeasure(), 2) }} {{ $reel->measurementUnit() }}
                 </option>
             @endforeach
         </select>

@@ -14,7 +14,7 @@ class ProductionRun extends Model
 {
     protected $fillable = [
         'production_id', 'reel_stock_id', 'machine_id', 'production_user_id', 'core_id', 'core_quantity', 'source_reel_status',
-        'output_roll_width', 'roll_length', 'production_quantity', 'status', 'active_key', 'started_at', 'finished_at',
+        'output_roll_width', 'roll_length', 'dimension_unit', 'production_quantity', 'status', 'active_key', 'started_at', 'finished_at',
         'started_by', 'finished_by',
     ];
 
@@ -30,4 +30,7 @@ class ProductionRun extends Model
     public function machine(): BelongsTo { return $this->belongsTo(Machine::class); }
     public function productionUser(): BelongsTo { return $this->belongsTo(Employee::class, 'production_user_id'); }
     public function core(): BelongsTo { return $this->belongsTo(Core::class); }
+
+    public function outputWidthUnit(): string { return $this->dimension_unit === 'inch' ? 'inch' : 'mm'; }
+    public function rollLengthUnit(): string { return $this->dimension_unit === 'inch' ? 'inch' : 'm'; }
 }

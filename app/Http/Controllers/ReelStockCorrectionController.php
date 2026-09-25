@@ -75,6 +75,7 @@ class ReelStockCorrectionController extends Controller
         $query = Reel::with(['brand:id,name', 'type:id,name,volume', 'gsm:id,gsm'])->withCount('stocks')->latest();
         return DataTables::eloquent($query)
             ->addColumn('brand_name', fn (Reel $reel) => $reel->brand?->name ?? '—')
+            ->editColumn('width', fn (Reel $reel) => number_format((float) $reel->width, 2) . ' ' . $reel->widthUnit())
             ->editColumn('length', fn (Reel $reel) => number_format($reel->nominalMeasure(), 2) . ' ' . $reel->measurementUnit())
             ->orderColumn('length', 'COALESCE(reels.weight_kg, reels.length) $1')
             ->addColumn('type_name', fn (Reel $reel) => $reel->type?->name ?? '—')
@@ -87,7 +88,7 @@ class ReelStockCorrectionController extends Controller
     public function reel(Reel $reel): JsonResponse
     {
         return response()->json(['reel' => $reel->only([
-            'id', 'code', 'reel_brand_id', 'reel_type_id', 'reel_gsm_id', 'width', 'length', 'weight_kg',
+            'id', 'code', 'reel_brand_id', 'reel_type_id', 'reel_gsm_id', 'width', 'width_unit', 'length', 'weight_kg',
             'unit_price', 'selling_price', 'is_active', 'remarks',
         ])]);
     }
@@ -254,6 +255,8 @@ class ReelStockCorrectionController extends Controller
         $data['weight_kg'] = $data['weight_kg'] ?? null;
         DB::transaction(function () use ($data, $reel, $weight) {
             $locked = Reel::lockForUpdate()->findOrFail($reel->id);
+            $data['width_unit'] = (int) $data['reel_type_id'] === (int) $locked->reel_type_id
+                ? ($locked->width_unit ?? 'mm') : ($weight ? 'cm' : 'mm');
             if ($locked->isWeightBased() !== $weight && $locked->stocks()->withoutGlobalScopes()->exists()) {
                 throw ValidationException::withMessages(['reel_type_id' => 'The measurement mode cannot change after stock has been added.']);
             }

@@ -76,6 +76,7 @@ class ReelController extends Controller
         return DataTables::eloquent($query)
             ->addIndexColumn()
             ->addColumn('brand_name', fn(Reel $reel) => $reel->brand?->name ?? '—')
+            ->editColumn('width', fn (Reel $reel) => number_format((float) $reel->width, 2) . ' ' . $reel->widthUnit())
             ->editColumn('length', fn (Reel $reel) => number_format($reel->nominalMeasure(), 2) . ' ' . $reel->measurementUnit())
             ->orderColumn('length', 'COALESCE(reels.weight_kg, reels.length) $1')
             ->addColumn('type_name', fn(Reel $reel) => $reel->type?->name ?? '—')
@@ -202,6 +203,7 @@ class ReelController extends Controller
     public function store(ReelRequest $request): RedirectResponse|JsonResponse
     {
         $data = $request->validated();
+        $data['width_unit'] = ReelType::findOrFail($data['reel_type_id'])->volume === 'weight' ? 'cm' : 'mm';
         $data['code'] = $this->generateCode($data);
         $this->ensureCodeIsUnique($data['code']);
         $reel = Reel::create($data);
@@ -229,6 +231,9 @@ class ReelController extends Controller
         }
         $data['length'] = $data['length'] ?? null;
         $data['weight_kg'] = $data['weight_kg'] ?? null;
+        $data['width_unit'] = (int) $data['reel_type_id'] === (int) $reel->reel_type_id
+            ? ($reel->width_unit ?? 'mm')
+            : (ReelType::findOrFail($data['reel_type_id'])->volume === 'weight' ? 'cm' : 'mm');
         $data['code'] = $this->generateCode($data);
         $this->ensureCodeIsUnique($data['code'], $reel->id);
         $reel->update($data);

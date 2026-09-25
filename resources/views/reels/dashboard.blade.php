@@ -186,7 +186,7 @@
                                 data-placeholder="All Reel Types">
                                 <option value=""></option>
                                 @foreach ($types as $type)
-                                    <option value="{{ $type->id }}">{{ $type->name }}</option>
+                                    <option value="{{ $type->id }}" data-volume="{{ $type->volume }}">{{ $type->name }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -200,12 +200,12 @@
                             </select>
                         </div>
                         <div class="col-md-2">
-                            <label class="form-label">Width (mm)</label>
+                            <label class="form-label" id="dashboardWidthLabel">Width (mm or cm)</label>
                             <input type="number" id="dashboardWidth" class="form-control dashboard-number-filter" min="0.01"
                                 step="0.01" placeholder="All Widths">
                         </div>
                         <div class="col-md-2">
-                            <label class="form-label">Length / Weight</label>
+                            <label class="form-label" id="dashboardMeasureLabel">Length (m) / Weight (kg)</label>
                             <input type="number" id="dashboardLength" class="form-control dashboard-number-filter"
                                 min="0.01" step="0.01" placeholder="All Lengths">
                         </div>
@@ -223,7 +223,7 @@
                                     <th rowspan="2">Brand</th>
                                     <th rowspan="2">Reel Type</th>
                                     <th rowspan="2">GSM</th>
-                                    <th rowspan="2">Width (mm)</th>
+                                    <th rowspan="2">Width</th>
                                     <th rowspan="2">Length / Weight</th>
                                     <th class="reel-group-header" colspan="{{ $warehouses->count() + 1 }}">Full Reels</th>
                                     <th class="reel-group-header" colspan="{{ $warehouses->count() + 1 }}">Bit Reels</th>
@@ -470,7 +470,13 @@
                 initComplete: () => $('#dashboardLoader').fadeOut(200)
             });
 
-            $('.dashboard-filter').on('change', () => dashboardTable.ajax.reload());
+            const updateFilterUnits = () => {
+                const volume = $('#dashboardType option:selected').data('volume');
+                $('#dashboardWidthLabel').text(volume === 'weight' ? 'Width (cm; legacy mm)' : volume === 'length' ? 'Width (mm)' : 'Width (mm or cm)');
+                $('#dashboardMeasureLabel').text(volume === 'weight' ? 'Weight (kg)' : volume === 'length' ? 'Length (m)' : 'Length (m) / Weight (kg)');
+            };
+            $('.dashboard-filter').on('change', () => { updateFilterUnits(); dashboardTable.ajax.reload(); });
+            updateFilterUnits();
             let numberFilterTimer;
             $('.dashboard-number-filter').on('input', function () {
                 clearTimeout(numberFilterTimer);
@@ -479,6 +485,7 @@
             $('#resetDashboardFilters').on('click', function () {
                 $('.dashboard-filter').val('').trigger('change.select2');
                 $('.dashboard-number-filter').val('');
+                updateFilterUnits();
                 dashboardTable.ajax.reload();
             });
 
@@ -498,8 +505,8 @@
                     ['Brand', $('#dashboardBrand option:selected').text().trim()],
                     ['Reel Type', $('#dashboardType option:selected').text().trim()],
                     ['GSM', $('#dashboardGsm option:selected').text().trim()],
-                    ['Width', $('#dashboardWidth').val() ? `${$('#dashboardWidth').val()} mm` : ''],
-                    ['Length', $('#dashboardLength').val() ? `${$('#dashboardLength').val()} m` : '']
+                    ['Width', $('#dashboardWidth').val()],
+                    ['Length / Weight', $('#dashboardLength').val() ? `${$('#dashboardLength').val()} ${$('#dashboardType option:selected').data('volume') === 'weight' ? 'kg' : $('#dashboardType option:selected').data('volume') === 'length' ? 'm' : '(m or kg)'}` : '']
                 ].filter(([, value]) => value);
                 const filterText = filterValues.length ? filterValues.map(([label, value]) =>
                     `${label}: ${value}`).join(' | ') : 'All Reels';

@@ -13,6 +13,7 @@
         $('#quickReelBrand,#quickReelType,#quickReelGsm').select2({ theme: 'bootstrap-5', width: '100%', allowClear: true, dropdownParent: $('#quickReelModal') });
         $('#quickReelType').on('change', function () {
             const weight = $(this).find(':selected').data('volume') === 'weight';
+            $('#quickWidthUnit').text(weight ? 'cm' : 'mm');
             $('#quickMeasureLabel').text(weight ? 'Nominal Weight (kg)' : 'Length (m)');
             $('#quickMeasureLabel').closest('.col-md-6').find('input').attr('name', weight ? 'weight_kg' : 'length');
         });

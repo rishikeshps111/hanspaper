@@ -185,7 +185,9 @@ class DashboardController extends Controller
             'core_name' => $run->core?->name,
             'core_quantity' => (int) $run->core_quantity,
             'output_roll_width' => (float) $run->output_roll_width,
+            'output_width_unit' => $run->outputWidthUnit(),
             'roll_length' => (float) $run->roll_length,
+            'roll_length_unit' => $run->rollLengthUnit(),
             'started_at' => $run->started_at?->format('d M Y h:i a') ?? 'Not Available',
             'completed_runs' => $production->productionLists
                 ->sortByDesc('created_at')
@@ -203,7 +205,9 @@ class DashboardController extends Controller
                         'core_name' => $entry->core?->name,
                         'core_quantity' => (int) ($entry->core_quantity ?? 0),
                         'output_roll_width' => $usage ? (float) $usage->output_roll_width : null,
+                        'output_width_unit' => $usage?->outputWidthUnit() ?? 'mm',
                         'roll_length' => $usage ? (float) $usage->roll_length : null,
+                        'roll_length_unit' => $usage?->rollLengthUnit() ?? 'm',
                         'completed_at' => $entry->productionRun?->finished_at?->format('d M Y h:i a')
                             ?? $entry->created_at?->format('d M Y h:i a')
                             ?? 'Not Available',

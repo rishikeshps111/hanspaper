@@ -79,7 +79,7 @@
                                     <th>Brand</th>
                                     <th>Type</th>
                                     <th>GSM</th>
-                                    <th>Width (mm)</th>
+                                    <th>Width</th>
                                     <th>Length / Weight</th>
                                     <th>Unit Price</th>
                                     <th>Selling Price</th>

@@ -55,7 +55,7 @@
     </div>
 
     <div class="col-md-6">
-        <label for="width" class="form-label">Width (mm) <span class="text-danger">*</span></label>
+        <label for="width" class="form-label">Width (<span id="reelWidthUnit">{{ isset($reel) ? $reel->widthUnit() : 'mm' }}</span>) <span class="text-danger">*</span></label>
         <input type="number" name="width" id="width" class="form-control" step="0.01" min="0.01"
             value="{{ old('width', $reel->width ?? '') }}" required>
         @error('width')<div class="text-danger small mt-1">{{ $message }}</div>@enderror

@@ -77,7 +77,7 @@
                                             <th>Brand</th>
                                             <th>Type</th>
                                             <th>GSM</th>
-                                            <th>Width (mm)</th>
+                                            <th>Width</th>
                                             <th>Length / Weight</th>
                                             <th>Unit Price</th>
                                             <th>Selling Price</th>
@@ -235,7 +235,7 @@
                             </select>
                             <div class="invalid-feedback" data-error="reel_gsm_id"></div>
                         </div>
-                        <div class="col-md-3"><label class="form-label">Width (mm) <span
+                        <div class="col-md-3"><label class="form-label">Width (<span id="correctionWidthUnit">mm</span>) <span
                                     class="text-danger">*</span></label><input type="number" step="0.01" name="width"
                                 class="form-control" required>
                             <div class="invalid-feedback" data-error="width"></div>
@@ -289,10 +289,14 @@
             function updateCorrectionMeasure() {
                 const form = $('#reelCorrectionForm');
                 const weight = form.find('[name=reel_type_id] option:selected').data('volume') === 'weight';
+                $('#correctionWidthUnit').text(weight ? (form.data('legacy-width') ? 'mm' : 'cm') : 'mm');
                 form.find('[name=length]').prop('required', !weight).prop('disabled', weight).closest('.col-md-3').toggle(!weight);
                 form.find('[name=weight_kg]').prop('required', weight).prop('disabled', !weight).closest('.col-md-3').toggle(weight);
             }
-            $('#reelCorrectionForm [name=reel_type_id]').on('change', updateCorrectionMeasure);
+            $('#reelCorrectionForm [name=reel_type_id]').on('change', function () {
+                $('#reelCorrectionForm').data('legacy-width', false);
+                updateCorrectionMeasure();
+            });
             const urls = {
                 batches: @json(route('reels.corrections.stock-batches', [], false)),
                 correct: @json(route('reels.corrections.stock', [], false)),
@@ -461,6 +465,7 @@
                     reel: r
                 }) => {
                     $('#correctionReelId').val(r.id);
+                    f.data('legacy-width', r.width_unit === null);
                     Object.entries(r).forEach(([key, value]) => {
                         const input = f.find(`[name="${key}"]`);
                         input.val(value === true ? 1 : value === false ? 0 : value);

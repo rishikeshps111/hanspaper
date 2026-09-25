@@ -11,10 +11,12 @@ class ReelWeightUsage
         if (!in_array($status, ['bit', 'finished'], true) || $before <= 0) {
             throw ValidationException::withMessages(['reel_status_after_usage' => 'Choose Bit or Finished for a reel with available weight.']);
         }
-        if ($status === 'finished') {
-            $remaining = 0;
-        } elseif ($remaining === null || $remaining === '') {
-            throw ValidationException::withMessages(['remaining_weight_kg' => 'Enter the measured balance weight for the Bit reel.']);
+        if ($remaining === null || $remaining === '') {
+            if ($status === 'finished') {
+                $remaining = 0;
+            } else {
+                throw ValidationException::withMessages(['remaining_weight_kg' => 'Enter the measured balance weight for the Bit reel.']);
+            }
         }
         if (!is_numeric($remaining) || !is_finite((float) $remaining) || (float) $remaining < 0 || (float) $remaining > $before) {
             throw ValidationException::withMessages(['remaining_weight_kg' => 'Remaining weight must be between zero and the available weight.']);

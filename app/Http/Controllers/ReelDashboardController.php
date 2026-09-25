@@ -69,7 +69,7 @@ class ReelDashboardController extends Controller
                     'brand_name' => $reel->brand?->name ?? '—',
                     'type_name' => $reel->type?->name ?? '—',
                     'gsm_value' => $reel->gsm?->gsm ?? '—',
-                    'width' => $this->compactNumber($reel->width),
+                    'width' => $this->compactNumber($reel->width) . ' ' . $reel->widthUnit(),
                     'length' => $this->compactNumber($reel->nominalMeasure()) . ' ' . $reel->measurementUnit(),
                 ];
 

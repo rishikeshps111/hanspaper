@@ -233,7 +233,7 @@ class ProductionItemMasterController extends Controller
                 $sourceWidth = (float) ($stock->reel?->width ?? 0);
                 $cutWidth = (float) ($stock->cut_width ?? 0);
                 $balance = (float) $stock->balance_length;
-                $widthSplits = $cutWidth > 0 ? (int) floor($sourceWidth / $cutWidth) : 0;
+                $widthSplits = !$stock->isWeightBased() && $cutWidth > 0 ? (int) floor($sourceWidth / $cutWidth) : 0;
                 $actualLength = $stock->status === 'bit' && $widthSplits > 0
                     ? $balance / $widthSplits
                     : $balance;
@@ -251,6 +251,7 @@ class ProductionItemMasterController extends Controller
                     ])),
                     'status' => $stock->status,
                     'width' => $sourceWidth,
+                    'width_unit' => $stock->reel->widthUnit(),
                     'balance' => $balance,
                     'volume' => $stock->reel->type->volume,
                     'balance_weight_kg' => $stock->balance_weight_kg,
@@ -912,9 +913,11 @@ class ProductionItemMasterController extends Controller
                 }
 
                 $outputWidth = round((float) $validated['output_roll_width'], 3);
-                $sourceWidth = round((float) $stock->reel->width, 3);
-                if ($outputWidth > $sourceWidth || floor($sourceWidth / $outputWidth) < 1) {
-                    throw ValidationException::withMessages(['output_roll_width' => "Output roll width must fit within the source width of {$sourceWidth} mm."]);
+                $weightBased = $stock->isWeightBased();
+                $sourceWidth = round($stock->reel->productionSourceWidth(), 3);
+                $outputWidthInSourceUnit = $weightBased ? $outputWidth * 2.54 : $outputWidth;
+                if ($outputWidthInSourceUnit > $sourceWidth || floor($sourceWidth / $outputWidthInSourceUnit) < 1) {
+                    throw ValidationException::withMessages(['output_roll_width' => "Output roll width must fit within the source width of {$sourceWidth} " . ($weightBased ? 'cm' : 'mm') . '.']);
                 }
                 if (!$core->is_active || $core->quantity < 1) {
                     throw ValidationException::withMessages(['core_id' => 'The selected core has no available quantity.']);
@@ -926,7 +929,7 @@ class ProductionItemMasterController extends Controller
                     'machine_id' => $machine->id, 'production_user_id' => $validated['packed_by'],
                     'core_id' => $core->id, 'core_quantity' => null,
                     'source_reel_status' => $stock->status, 'output_roll_width' => $outputWidth,
-                    'roll_length' => $rollLength, 'production_quantity' => null,
+                    'roll_length' => $rollLength, 'dimension_unit' => $weightBased ? 'inch' : 'metric', 'production_quantity' => null,
                     'status' => 'in_progress', 'active_key' => 1, 'started_at' => now(), 'started_by' => auth()->id(),
                 ]);
                 $production->update([
@@ -973,11 +976,16 @@ class ProductionItemMasterController extends Controller
             }
             $width = round((float) $data['output_roll_width'], 3);
             $length = round((float) $data['roll_length'], 3);
-            if ($width > (float) $stock->reel->width) throw ValidationException::withMessages(['output_roll_width' => 'Output width must fit the reel width.']);
-            $splits = max(1, (int) floor((float) $stock->reel->width / $width));
+            $dimensionUnit = $stock->isWeightBased() ? ($run->reel_stock_id === $stock->id && $run->dimension_unit === null ? null : 'inch') : 'metric';
+            $sourceWidth = $stock->isWeightBased() && $dimensionUnit === 'inch'
+                ? $stock->reel->productionSourceWidth() : (float) $stock->reel->width;
+            $widthInSourceUnit = $dimensionUnit === 'inch' ? $width * 2.54 : $width;
+            if ($widthInSourceUnit > $sourceWidth) throw ValidationException::withMessages(['output_roll_width' => 'Output width must fit the reel width.']);
+            $splits = max(1, (int) floor($sourceWidth / $widthInSourceUnit));
             if (!$stock->isWeightBased() && $length > $stock->actualBalanceLength() * $splits) throw ValidationException::withMessages(['roll_length' => 'Roll length exceeds available capacity.']);
             $changes = ['reel_stock_id' => $stock->id, 'machine_id' => $machine->id, 'production_user_id' => $data['packed_by'],
-                'core_id' => $core->id, 'output_roll_width' => $width, 'roll_length' => $length, 'source_reel_status' => $stock->status];
+                'core_id' => $core->id, 'output_roll_width' => $width, 'roll_length' => $length,
+                'dimension_unit' => $dimensionUnit, 'source_reel_status' => $stock->status];
             $history = json_decode($run->getRawOriginal('correction_history') ?: '[]', true);
             $history[] = ['before' => $run->only(array_keys($changes)), 'after' => $changes,
                 'reason' => $data['correction_reason'] ?? null, 'changed_by' => auth()->id(), 'changed_at' => now()->toIso8601String()];
@@ -997,7 +1005,7 @@ class ProductionItemMasterController extends Controller
             'production_qty' => ['required', 'integer', 'min:1'],
             'reel_status_after_usage' => ['required', 'in:bit,finished'],
             'reel_status_selection_type' => ['required', 'in:automatic,manual'],
-            'remaining_weight_kg' => ['exclude_if:reel_status_after_usage,finished', 'nullable', 'numeric', 'min:0', 'max:999999999.999', 'decimal:0,3'],
+            'remaining_weight_kg' => ['nullable', 'numeric', 'min:0', 'max:999999999.999', 'decimal:0,3'],
         ]);
 
         if ($validator->fails()) {
@@ -1020,14 +1028,16 @@ class ProductionItemMasterController extends Controller
 
                 $rollLength = round((float) $run->roll_length, 3);
                 $outputWidth = round((float) $run->output_roll_width, 3);
-                $sourceWidth = round((float) $stock->reel->width, 3);
-                if ($outputWidth > $sourceWidth) {
+                $sourceWidth = round($stock->isWeightBased() && $run->dimension_unit === 'inch'
+                    ? $stock->reel->productionSourceWidth() : (float) $stock->reel->width, 3);
+                $outputWidthInSourceUnit = $run->dimension_unit === 'inch' ? $outputWidth * 2.54 : $outputWidth;
+                if ($outputWidthInSourceUnit > $sourceWidth) {
                     throw ValidationException::withMessages([
-                        'output_roll_width' => "Output roll width cannot exceed the source width of {$sourceWidth} mm.",
+                        'output_roll_width' => "Output roll width cannot exceed the source width of {$sourceWidth} " . ($run->dimension_unit === 'inch' ? 'cm' : 'mm') . '.',
                     ]);
                 }
 
-                $rollCount = (int) floor($sourceWidth / $outputWidth);
+                $rollCount = (int) floor($sourceWidth / $outputWidthInSourceUnit);
                 if ($rollCount < 1) {
                     throw ValidationException::withMessages(['output_roll_width' => 'The selected width does not produce any rolls.']);
                 }
@@ -1054,7 +1064,7 @@ class ProductionItemMasterController extends Controller
                     $sourceStatus = $stock->status;
                     $balanceBefore = $consumedLength = $balanceAfter = $totalOutputLength = 0;
                     $physicalRemainingLength = $wastageOutputLength = $physicalWastageLength = $stockBalanceAfter = 0;
-                    $widthWaste = round($sourceWidth - ($outputWidth * $rollCount), 3);
+                    $widthWaste = round($sourceWidth - ($outputWidthInSourceUnit * $rollCount), 3);
                 } else {
                     $previousCutWidth = round((float) ($stock->cut_width ?? 0), 3);
                     $previousWidthSplits = $previousCutWidth > 0
@@ -1084,7 +1094,7 @@ class ProductionItemMasterController extends Controller
                         $resultingStatus !== $calculatedStatus ? 'manual' : 'automatic';
                     $sourceStatus = $stock->status;
                     $totalOutputLength = $balanceBefore;
-                    $widthWaste = round($sourceWidth - ($outputWidth * $rollCount), 3);
+                    $widthWaste = round($sourceWidth - ($outputWidthInSourceUnit * $rollCount), 3);
                     $physicalRemainingLength = round($balanceAfter / $rollCount, 3);
                     $wastageOutputLength = $resultingStatus === 'finished' ? $balanceAfter : 0;
                     $physicalWastageLength = $resultingStatus === 'finished' ? $physicalRemainingLength : 0;
@@ -1128,6 +1138,7 @@ class ProductionItemMasterController extends Controller
                     'resulting_status' => $resultingStatus,
                     'status_selection_type' => $statusSelectionType,
                     'source_width' => $sourceWidth,
+                    'dimension_unit' => $run->dimension_unit,
                     'output_roll_width' => $outputWidth,
                     'roll_length' => $rollLength,
                     'production_quantity' => $productionQuantity,
@@ -1165,7 +1176,7 @@ class ProductionItemMasterController extends Controller
                     'reference_id' => $production->id,
                     'reel_warehouse_id' => $stock->reel_warehouse_id,
                     'remarks' => $stock->isWeightBased()
-                        ? "{$productionQuantity} roll(s) produced; {$weightUsage['consumed_weight_kg']} kg used. Status set to " . ucfirst($resultingStatus) . '.'
+                        ? "{$productionQuantity} roll(s) produced at {$outputWidth} " . $run->outputWidthUnit() . " width and {$rollLength} " . $run->rollLengthUnit() . "; {$weightUsage['consumed_weight_kg']} kg used. Status set to " . ucfirst($resultingStatus) . '.'
                         : "{$productionQuantity} roll(s) × {$rollLength} m used at {$outputWidth} mm width. Status set to " . ucfirst($resultingStatus) . '.',
                     'created_by' => auth()->id(),
                     'created_at' => now(),

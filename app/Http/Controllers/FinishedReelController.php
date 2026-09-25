@@ -57,7 +57,7 @@ class FinishedReelController extends Controller
             ->addColumn('brand_name', fn (ReelStock $stock) => $stock->reel?->brand?->name ?? '—')
             ->addColumn('type_name', fn (ReelStock $stock) => $stock->reel?->type?->name ?? '—')
             ->addColumn('gsm_value', fn (ReelStock $stock) => $stock->reel?->gsm?->gsm ?? '—')
-            ->addColumn('width', fn (ReelStock $stock) => $this->measurement($stock->reel?->width))
+            ->addColumn('width', fn (ReelStock $stock) => $this->measurement($stock->reel?->width) . ' ' . $stock->reel->widthUnit())
             ->addColumn('provider_name', fn (ReelStock $stock) => $stock->provider?->name ?? '—')
             ->addColumn('warehouse_name', fn (ReelStock $stock) => $stock->warehouse?->name ?? '—')
             ->editColumn('actual_code', fn (ReelStock $stock) => $stock->actual_code ?: '—')

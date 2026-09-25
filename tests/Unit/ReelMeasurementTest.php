@@ -82,6 +82,9 @@ class ReelMeasurementTest extends TestCase
         }
         // SQLite cannot alter column nullability on this Laravel version; the fixture length is already nullable.
         Schema::table('reel_types', fn (Blueprint $table) => $table->string('volume')->default('length'));
+        Schema::table('reels', fn (Blueprint $table) => $table->string('width_unit')->nullable());
+        Schema::table('production_runs', fn (Blueprint $table) => $table->string('dimension_unit')->nullable());
+        Schema::table('reel_stock_usages', fn (Blueprint $table) => $table->string('dimension_unit')->nullable());
         foreach (['reels' => ['weight_kg'], 'reel_stocks' => ['original_weight_kg', 'balance_weight_kg'],
             'reel_stock_movements' => ['weight_kg', 'weight_before_kg', 'weight_after_kg'],
             'reel_sale_items' => ['weight_kg', 'weight_before_kg', 'weight_after_kg'],
@@ -111,7 +114,8 @@ class ReelMeasurementTest extends TestCase
         $type = ReelType::create(['name' => 'Thermal '.$mode, 'short_name' => 'THERMALPAPER', 'volume' => $mode, 'is_active' => true]);
         return Reel::create(['code' => 'APP-THERMALPAPER-55GSM-485-'.($mode === 'weight' ? '50' : '6000'),
             'reel_brand_id' => 1, 'reel_type_id' => $type->id, 'reel_gsm_id' => 1,
-            'width' => 485, 'length' => $mode === 'length' ? 6000 : null, 'weight_kg' => $mode === 'weight' ? 50 : null,
+            'width' => 485, 'width_unit' => $mode === 'weight' ? 'cm' : 'mm',
+            'length' => $mode === 'length' ? 6000 : null, 'weight_kg' => $mode === 'weight' ? 50 : null,
             'unit_price' => 100, 'selling_price' => 150, 'is_active' => true]);
     }
 
@@ -130,7 +134,8 @@ class ReelMeasurementTest extends TestCase
         $production = ProductionItemMaster::create(['requested_qty' => 100, 'status' => 'Pending', 'production_status' => 'Pending']);
         $response = app(ProductionItemMasterController::class)->startProduction(Request::create('/', 'POST', [
             'production_id' => $production->id, 'reel_stock_id' => $stock->id, 'packed_by' => 1,
-            'machines' => 1, 'core_id' => 1, 'roll_length' => 10, 'output_roll_width' => 100,
+            'machines' => 1, 'core_id' => 1, 'roll_length' => 10,
+            'output_roll_width' => $stock->isWeightBased() ? 4 : 100,
         ]));
         $this->assertSame(200, $response->getStatusCode(), $response->getContent());
         return ProductionRun::where('production_id', $production->id)->firstOrFail();
@@ -157,13 +162,17 @@ class ReelMeasurementTest extends TestCase
         $this->assertSame('30.50', $first['bit_reel_label']['actual_balance_length']);
         $this->assertEquals(30.5, $stock->fresh()->availableBalance());
         $this->assertEquals(19.5, ReelStockUsage::first()->consumed_weight_kg);
-        $this->finish($this->start($stock->fresh()), 'finished');
+        $this->assertSame('inch', ReelStockUsage::first()->dimension_unit);
+        $this->assertSame('inch', ReelStockUsage::first()->outputWidthUnit());
+        $this->assertEquals(47, ReelStockUsage::first()->output_roll_count);
+        $this->assertEquals(7.48, ReelStockUsage::first()->width_waste);
+        $this->finish($this->start($stock->fresh()), 'finished', 2.5);
         $this->assertSame('finished', $stock->fresh()->status);
         $this->assertEquals(0, $stock->fresh()->balance_weight_kg);
         $usage = ReelStockUsage::latest('id')->first();
-        $this->assertEquals(30.5, $usage->consumed_weight_kg);
-        $this->assertEquals(0, $usage->wastage_weight_kg);
-        $this->assertSame(0, ReelStockMovement::where('transaction_type', 'production_wastage')->count());
+        $this->assertEquals(28, $usage->consumed_weight_kg);
+        $this->assertEquals(2.5, $usage->wastage_weight_kg);
+        $this->assertEquals(2.5, ReelStockMovement::where('transaction_type', 'production_wastage')->first()->weight_kg);
         $this->assertEquals(980, DB::table('cores')->value('quantity'));
     }
 
@@ -204,19 +213,81 @@ class ReelMeasurementTest extends TestCase
                 $this->assertArrayHasKey('remaining_weight_kg', $e->errors());
             }
         }
+        try {
+            $this->finish($run, 'finished', 51);
+            $this->fail('A finished reel accepted more than its available weight.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('remaining_weight_kg', $exception->errors());
+        }
         $this->assertSame('in_progress', $run->fresh()->status);
         $this->assertEquals(50, $stock->fresh()->balance_weight_kg);
         $this->assertEquals(0, ReelStockUsage::count());
     }
 
-    public function test_finished_weight_reel_uses_zero_even_if_a_stale_form_sends_weight(): void
+    public function test_finished_weight_reel_defaults_to_zero_when_blank(): void
     {
         $stock = $this->stock($this->reel());
-        $this->finish($this->start($stock), 'finished', 12.5);
+        $this->finish($this->start($stock), 'finished');
 
         $this->assertEquals(0, $stock->fresh()->balance_weight_kg);
         $this->assertEquals(50, ReelStockUsage::first()->consumed_weight_kg);
         $this->assertEquals(0, ReelStockUsage::first()->wastage_weight_kg);
+    }
+
+    public function test_weight_width_is_converted_from_inches_before_starting(): void
+    {
+        $reel = $this->reel();
+        $reel->update(['width' => 10, 'code' => 'APP-THERMALPAPER-55GSM-10-50']);
+        $stock = $this->stock($reel);
+        $production = ProductionItemMaster::create(['requested_qty' => 100, 'status' => 'Pending', 'production_status' => 'Pending']);
+
+        try {
+            app(ProductionItemMasterController::class)->startProduction(Request::create('/', 'POST', [
+                'production_id' => $production->id, 'reel_stock_id' => $stock->id, 'packed_by' => 1,
+                'machines' => 1, 'core_id' => 1, 'roll_length' => 2, 'output_roll_width' => 4,
+            ]));
+            $this->fail('Four inches should not fit within ten centimetres.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('output_roll_width', $exception->errors());
+        }
+        $this->assertSame(0, ProductionRun::count());
+    }
+
+    public function test_weight_run_correction_retains_inch_dimensions(): void
+    {
+        $stock = $this->stock($this->reel());
+        $run = $this->start($stock);
+        $response = app(ProductionItemMasterController::class)->correctProduction(Request::create('/', 'POST', [
+            'production_id' => $run->production_id, 'production_run_id' => $run->id,
+            'packed_by' => 1, 'machines' => 1, 'reel_stock_id' => $stock->id, 'core_id' => 1,
+            'output_roll_width' => 5, 'roll_length' => 2.5,
+        ]));
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame('inch', $run->fresh()->dimension_unit);
+        $this->finish($run->fresh(), 'bit', 25);
+        $this->assertEquals(38, ReelStockUsage::first()->output_roll_count);
+        $this->assertEquals(2.4, ReelStockUsage::first()->width_waste);
+    }
+
+    public function test_legacy_weight_run_keeps_its_recorded_metric_dimensions(): void
+    {
+        $reel = $this->reel();
+        $reel->update(['width' => 160, 'width_unit' => null, 'code' => 'APP-THERMALPAPER-55GSM-160-50']);
+        $stock = $this->stock($reel);
+        $production = ProductionItemMaster::create(['requested_qty' => 100, 'status' => 'In Progress', 'production_status' => 'In Progress']);
+        $run = ProductionRun::create([
+            'production_id' => $production->id, 'reel_stock_id' => $stock->id, 'machine_id' => 1,
+            'production_user_id' => 1, 'core_id' => 1, 'source_reel_status' => 'full',
+            'output_roll_width' => 40, 'roll_length' => 15, 'status' => 'in_progress', 'active_key' => 1,
+        ]);
+
+        $this->finish($run, 'bit', 30);
+        $usage = ReelStockUsage::first();
+        $this->assertNull($usage->dimension_unit);
+        $this->assertSame('mm', $usage->outputWidthUnit());
+        $this->assertSame('m', $usage->rollLengthUnit());
+        $this->assertEquals(4, $usage->output_roll_count);
+        $this->assertEquals(16, $reel->productionSourceWidth());
     }
 
     public function test_transfer_and_sale_preserve_weight_audit(): void
@@ -244,6 +315,7 @@ class ReelMeasurementTest extends TestCase
         $request->validateResolved();
         app(ReelController::class)->store($request);
         $this->assertSame('APP-THERMALPAPER-55GSM-485-50', Reel::first()->code);
+        $this->assertSame('cm', Reel::first()->widthUnit());
         $this->assertNull(Reel::first()->length);
         $this->expectException(ValidationException::class);
         $type->update(['volume' => 'length']);

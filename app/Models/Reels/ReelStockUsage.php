@@ -21,6 +21,7 @@ class ReelStockUsage extends Model
         'resulting_status',
         'status_selection_type',
         'source_width',
+        'dimension_unit',
         'output_roll_width',
         'roll_length',
         'production_quantity',
@@ -60,6 +61,9 @@ class ReelStockUsage extends Model
         return $this->belongsTo(ProductionItemMaster::class, 'production_id');
     }
     public function productionRun(): BelongsTo { return $this->belongsTo(\App\Models\ProductionRun::class); }
+    public function outputWidthUnit(): string { return $this->dimension_unit === 'inch' ? 'inch' : 'mm'; }
+    public function rollLengthUnit(): string { return $this->dimension_unit === 'inch' ? 'inch' : 'm'; }
+    public function sourceWidthUnit(): string { return $this->dimension_unit === 'inch' ? 'cm' : 'mm'; }
     public function productionList(): BelongsTo
     {
         return $this->belongsTo(ProductionList::class);

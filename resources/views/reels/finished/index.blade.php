@@ -73,7 +73,7 @@
                                     <th>Brand</th>
                                     <th>Reel Type</th>
                                     <th>GSM</th>
-                                    <th>Width (mm)</th>
+                                    <th>Width</th>
                                     <th>Original Length / Weight</th>
                                     <th>Provider</th>
                                     <th>Warehouse</th>

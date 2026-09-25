@@ -11,6 +11,7 @@ $(function () {
     };
     const updateReelCode = () => {
         const weight = $('#reel_type_id option:selected').data('volume') === 'weight';
+        $('#reelWidthUnit').text(weight ? @json(isset($reel) && $reel->width_unit === null && $reel->isWeightBased() ? 'mm' : 'cm') : 'mm');
         $('#length').prop('required', !weight).prop('disabled', weight).closest('.col-md-6').toggle(!weight);
         $('#weight_kg').prop('required', weight).prop('disabled', !weight);
         $('#weightField').toggle(weight);

@@ -97,13 +97,13 @@
                                                 </div>
                                                 <div class="col-sm-4"><small class="text-muted d-block">Roll
                                                         Length</small><strong>{{ number_format($usage->roll_length, 2) }}
-                                                        m</strong></div>
+                                                        {{ $usage->rollLengthUnit() }}</strong></div>
                                                 <div class="col-sm-4"><small class="text-muted d-block">Output
                                                         Width</small><strong>{{ number_format($usage->output_roll_width, 2) }}
-                                                        mm</strong></div>
+                                                        {{ $usage->outputWidthUnit() }}</strong></div>
                                                 <div class="col-sm-4"><small class="text-muted d-block">Width
                                                         Waste</small><strong>{{ number_format($usage->width_waste, 2) }}
-                                                        mm</strong></div>
+                                                        {{ $usage->sourceWidthUnit() }}</strong></div>
                                                 <div class="col-sm-4"><small class="text-muted d-block">Available
                                                         Capacity</small><strong>{{ number_format($actualAvailableLength, 2) }}
                                                         {{ $measureUnit }}</strong></div>
@@ -143,12 +143,12 @@
                                         <th>Machine</th>
                                         <th>Source Status</th>
                                         <th>Quantity</th>
-                                        <th>Roll Length (m)</th>
-                                        <th>Output Width (mm)</th>
+                                        <th>Roll Length</th>
+                                        <th>Output Width</th>
                                         <th>Width Splits</th>
                                         <th>Available ({{ $measureUnit }})</th>
                                         <th>Total Usage ({{ $measureUnit }})</th>
-                                        <th>Width Waste (mm)</th>
+                                        <th>Width Waste</th>
                                         <th>Balance ({{ $measureUnit }})</th>
                                         <th>Result</th>
                                     </tr>
@@ -168,12 +168,12 @@
                                                     class="badge bg-{{ $usage->source_status === 'full' ? 'success' : 'warning' }}">{{ ucfirst($usage->source_status) }}</span>
                                             </td>
                                             <td>{{ number_format($usage->production_quantity, 2) }}</td>
-                                            <td>{{ number_format($usage->roll_length, 2) }} m</td>
-                                            <td>{{ number_format($usage->output_roll_width, 2) }} mm</td>
+                                            <td>{{ number_format($usage->roll_length, 2) }} {{ $usage->rollLengthUnit() }}</td>
+                                            <td>{{ number_format($usage->output_roll_width, 2) }} {{ $usage->outputWidthUnit() }}</td>
                                             <td>{{ $usage->output_roll_count }}</td>
                                             <td>{{ number_format($weightBased ? $usage->weight_before_kg : $usage->total_output_length, 2) }} {{ $measureUnit }}</td>
                                             <td>{{ number_format($weightBased ? $usage->consumed_weight_kg : $usage->consumed_length, 2) }} {{ $measureUnit }}</td>
-                                            <td>{{ number_format($usage->width_waste, 2) }} mm</td>
+                                            <td>{{ number_format($usage->width_waste, 2) }} {{ $usage->sourceWidthUnit() }}</td>
                                             <td>{{ number_format($weightBased ? $usage->weight_before_kg : $usage->balance_before, 2) }} →
                                                 {{ number_format($weightBased ? ($usage->resulting_status === 'finished' ? 0 : $usage->remaining_weight_kg) : $usage->balance_after, 2) }} {{ $measureUnit }}
                                             </td>

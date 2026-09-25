@@ -16,6 +16,7 @@ class Reel extends Model
         'reel_type_id',
         'reel_gsm_id',
         'width',
+        'width_unit',
         'length',
         'weight_kg',
         'unit_price',
@@ -41,6 +42,18 @@ class Reel extends Model
     public function measurementUnit(): string
     {
         return $this->isWeightBased() ? 'kg' : 'm';
+    }
+
+    public function widthUnit(): string
+    {
+        return $this->isWeightBased() && $this->width_unit === 'cm' ? 'cm' : 'mm';
+    }
+
+    public function productionSourceWidth(): float
+    {
+        return $this->isWeightBased() && $this->widthUnit() === 'mm'
+            ? round((float) $this->width / 10, 3)
+            : (float) $this->width;
     }
 
     public function nominalMeasure(): float

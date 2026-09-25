@@ -81,7 +81,7 @@
                             <option value=""></option>@foreach($gsms as $item)
                             <option value="{{ $item->id }}">{{ $item->gsm }}</option>@endforeach
                         </select></div>
-                    <div class="col-md-6"><label class="form-label">Width (mm) <span
+                    <div class="col-md-6"><label class="form-label">Width (<span id="quickWidthUnit">mm</span>) <span
                                 class="text-danger">*</span></label><input type="number" name="width"
                             class="form-control" min="0.01" step="0.01" required></div>
                     <div class="col-md-6"><label class="form-label"><span id="quickMeasureLabel">Length (m)</span> <span
